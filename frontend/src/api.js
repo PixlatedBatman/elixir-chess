@@ -6,6 +6,10 @@ import {
   setFen,
 } from "./game";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  "";
+
 export function getRoomId() {
   const params =
     new URLSearchParams(
@@ -66,7 +70,7 @@ export async function joinRoom() {
 
   const response =
     await fetch(
-      `/api/rooms/${appState.roomId}/join`,
+      `${API_BASE_URL}/api/rooms/${appState.roomId}/join`,
       {
         method: "POST",
         headers: {
@@ -98,7 +102,7 @@ export function subscribeToRoom(
 ) {
   const events =
     new EventSource(
-      `/api/rooms/${appState.roomId}/events?playerId=${appState.playerId}`
+      `${API_BASE_URL}/api/rooms/${appState.roomId}/events?playerId=${appState.playerId}`
     );
 
   events.addEventListener(
@@ -203,7 +207,7 @@ async function postRoomAction(
 ) {
   const response =
     await fetch(
-      `/api/rooms/${appState.roomId}/${action}`,
+      `${API_BASE_URL}/api/rooms/${appState.roomId}/${action}`,
       {
         method: "POST",
         headers: {

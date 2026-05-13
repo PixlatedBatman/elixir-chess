@@ -6,7 +6,7 @@ import { Chess } from "chess.js";
 
 import {
   canPlaceReserve,
-} from "./src/variantRules.js";
+} from "./shared/variantRules.js";
 
 const __dirname =
   path.dirname(
@@ -14,7 +14,11 @@ const __dirname =
   );
 
 const distDir =
-  path.join(__dirname, "dist");
+  path.join(
+    __dirname,
+    "frontend",
+    "dist"
+  );
 
 const rooms =
   new Map();

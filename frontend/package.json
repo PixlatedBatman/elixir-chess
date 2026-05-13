@@ -1,20 +1,17 @@
 {
-  "name": "elixir-chess",
+  "name": "@elixir-chess/frontend",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start": "node server.js",
     "preview": "vite preview"
   },
   "devDependencies": {
     "vite": "^8.0.12"
   },
   "dependencies": {
-    "@chrisoakman/chessboardjs": "^1.0.0",
-    "chess.js": "^1.4.0",
-    "jquery": "^4.0.0"
+    "chess.js": "^1.4.0"
   }
 }

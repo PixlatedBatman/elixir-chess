@@ -19,7 +19,7 @@ import {
 import {
   canPlaceReserve,
   getReserveSquares,
-} from "./variantRules";
+} from "../../shared/variantRules.js";
 
 import {
   submitMove,
