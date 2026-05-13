@@ -7,6 +7,8 @@ import {
   tryMove,
   getLegalMoves,
   getFen,
+  getBoard,
+  placeReserve,
 } from "./game";
 
 import {
@@ -49,6 +51,11 @@ export function initializeInteractions(
     startDragging
   );
 
+  reserveElement.addEventListener(
+    "mousedown",
+    startDragging
+  );
+
   // mouse move
   document.addEventListener(
     "mousemove",
@@ -70,6 +77,21 @@ function startDragging(event) {
     event.target.closest(".piece");
 
   if (!piece) return;
+
+  event.preventDefault();
+
+  const reservePieceCode =
+    piece.dataset.reserve;
+
+  if (reservePieceCode) {
+    startReserveDragging(
+      piece,
+      reservePieceCode,
+      event
+    );
+
+    return;
+  }
 
   const pieceCode =
     piece.dataset.piece;
@@ -108,6 +130,59 @@ function startDragging(event) {
     document.createElement("img");
 
   appState.floatingPiece.src = piece.src;
+
+  appState.floatingPiece.classList.add(
+    "floating-piece"
+  );
+
+  document.body.appendChild(
+    appState.floatingPiece
+  );
+
+  moveFloatingPiece(
+    event.clientX,
+    event.clientY
+  );
+
+  rerender();
+}
+
+function startReserveDragging(
+  piece,
+  pieceCode,
+  event
+) {
+
+  const pieceColor =
+    pieceCode[0];
+
+  if (pieceColor !== getTurn()) {
+    return;
+  }
+
+  appState.draggedPiece =
+    pieceCode;
+
+  appState.draggedFrom =
+    `reserve:${pieceCode}`;
+
+  appState.selectedSource =
+    `reserve:${pieceCode}`;
+
+  appState.selectedSquare =
+    null;
+
+  appState.legalMoves =
+    getReserveSquares(
+      pieceColor,
+      getBoard()
+    );
+
+  appState.floatingPiece =
+    document.createElement("img");
+
+  appState.floatingPiece.src =
+    piece.src;
 
   appState.floatingPiece.classList.add(
     "floating-piece"
@@ -171,6 +246,33 @@ function stopDragging(event) {
   const target =
     square.dataset.square;
 
+  if (
+    appState.draggedFrom?.startsWith(
+      "reserve:"
+    )
+  ) {
+
+    const legal =
+      canPlaceReserve(
+        appState.fen,
+        appState.draggedPiece,
+        target
+      );
+
+    if (legal) {
+      placeReserve(
+        appState.draggedPiece,
+        target
+      );
+
+      appState.fen = getFen();
+    }
+
+    cleanupDrag();
+    rerender();
+    return;
+  }
+
   // same square cancel
   if (target === appState.draggedFrom) {
     cleanupDrag();
@@ -205,6 +307,8 @@ function cleanupDrag() {
 
   appState.draggedPiece = null;
   appState.draggedFrom = null;
+
+  appState.selectedSource = null;
 
   appState.selectedSquare = null;
 
@@ -252,6 +356,10 @@ function handleBoardClick(event) {
 
     const pieceCode =
       reservePiece.dataset.reserve;
+
+    if (pieceCode[0] !== getTurn()) {
+      return;
+    }
 
     appState.selectedSource =
       `reserve:${pieceCode}`;
@@ -357,15 +465,8 @@ function handleBoardClick(event) {
 
     if (legal) {
 
-      game.put(
-        {
-          type:
-            pieceCode[1]
-              .toLowerCase(),
-
-          color:
-            pieceCode[0],
-        },
+      placeReserve(
+        pieceCode,
         coordinate
       );
 
