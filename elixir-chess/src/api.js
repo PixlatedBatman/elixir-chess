@@ -159,11 +159,42 @@ function applyServerState(payload) {
     payload.role;
   appState.players =
     payload.players;
+  appState.lastMove =
+    payload.lastMove || null;
+  appState.boardOrientation =
+    payload.role === "b"
+      ? "b"
+      : "w";
+  appState.reservePieces =
+    getReservePieces(
+      getReserveColor(payload)
+    );
 
   setFen(payload.fen);
 
   appState.statusMessage =
     getStatusMessage(payload);
+}
+
+function getReserveColor(payload) {
+  if (
+    payload.role === "w" ||
+    payload.role === "b"
+  ) {
+    return payload.role;
+  }
+
+  return payload.turn;
+}
+
+function getReservePieces(color) {
+  return [
+    `${color}Q`,
+    `${color}R`,
+    `${color}B`,
+    `${color}N`,
+    `${color}P`,
+  ];
 }
 
 async function postRoomAction(

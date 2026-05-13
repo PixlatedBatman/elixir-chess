@@ -234,6 +234,14 @@ function handleMove(
     return;
   }
 
+  room.lastMove = {
+    type: "move",
+    squares: [
+      move.from,
+      move.to,
+    ],
+  };
+
   sendJson(
     response,
     200,
@@ -330,6 +338,13 @@ function handleReserve(
     room.game
   );
 
+  room.lastMove = {
+    type: "reserve",
+    squares: [
+      body.target,
+    ],
+  };
+
   sendJson(
     response,
     200,
@@ -402,6 +417,7 @@ function getRoom(roomId) {
           w: null,
           b: null,
         },
+        lastMove: null,
         clients: new Set(),
       }
     );
@@ -467,6 +483,7 @@ function serializeRoom(
       w: Boolean(room.players.w),
       b: Boolean(room.players.b),
     },
+    lastMove: room.lastMove,
   };
 }
 

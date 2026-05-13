@@ -10,6 +10,9 @@ export const appState = {
     "wP",
     ],
 
+  boardOrientation: "w",
+  lastMove: null,
+
   draggedPiece: null,
 
   draggedFrom: null,

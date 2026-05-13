@@ -341,6 +341,13 @@ async function commitMove(from, to) {
 
   if (move) {
     appState.fen = getFen();
+    appState.lastMove = {
+      type: "move",
+      squares: [
+        from,
+        to,
+      ],
+    };
   }
 
   return Boolean(move);
@@ -365,6 +372,12 @@ async function commitReserve(
 
   if (placed) {
     appState.fen = getFen();
+    appState.lastMove = {
+      type: "reserve",
+      squares: [
+        target,
+      ],
+    };
   }
 
   return placed;
@@ -380,7 +393,9 @@ function rerender() {
     appState.fen,
     appState.draggedFrom,
     appState.selectedSquare,
-    appState.legalMoves
+    appState.legalMoves,
+    appState.boardOrientation,
+    appState.lastMove
   );
 
   const reserveElement =

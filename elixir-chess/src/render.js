@@ -8,7 +8,9 @@ export function createBoard(
   fen,
   draggedFrom = null,
   selectedSquare = null,
-  legalMoves = []
+  legalMoves = [],
+  orientation = "w",
+  lastMove = null
 ) {
 
   boardElement.innerHTML = "";
@@ -19,9 +21,19 @@ export function createBoard(
   const board =
     tempGame.board();
 
-  for (let row = 0; row < 8; row++) {
+  const rowIndexes =
+    orientation === "b"
+      ? [7, 6, 5, 4, 3, 2, 1, 0]
+      : [0, 1, 2, 3, 4, 5, 6, 7];
 
-    for (let col = 0; col < 8; col++) {
+  const colIndexes =
+    orientation === "b"
+      ? [7, 6, 5, 4, 3, 2, 1, 0]
+      : [0, 1, 2, 3, 4, 5, 6, 7];
+
+  for (const row of rowIndexes) {
+
+    for (const col of colIndexes) {
 
       const square =
         document.createElement("div");
@@ -63,6 +75,16 @@ export function createBoard(
       ) {
         square.classList.add(
           "legal-move"
+        );
+      }
+
+      if (
+        lastMove?.squares?.includes(
+          coordinate
+        )
+      ) {
+        square.classList.add(
+          "last-move"
         );
       }
 

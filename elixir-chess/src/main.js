@@ -52,7 +52,12 @@ appState.fen = getFen();
 // initial render
 createBoard(
   boardElement,
-  appState.fen
+  appState.fen,
+  appState.draggedFrom,
+  appState.selectedSquare,
+  appState.legalMoves,
+  appState.boardOrientation,
+  appState.lastMove
 );
 
 const reserveElement =
@@ -82,7 +87,9 @@ function rerenderApp() {
     appState.fen,
     appState.draggedFrom,
     appState.selectedSquare,
-    appState.legalMoves
+    appState.legalMoves,
+    appState.boardOrientation,
+    appState.lastMove
   );
 
   renderReserve(
