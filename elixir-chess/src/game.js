@@ -29,6 +29,10 @@ export function getFen() {
   return game.fen();
 }
 
+export function setFen(fen) {
+  game.load(fen);
+}
+
 export function placeReserve(pieceCode, target) {
   const color =
     pieceCode[0];

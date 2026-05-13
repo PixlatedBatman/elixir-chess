@@ -21,6 +21,11 @@ import {
   getReserveSquares,
 } from "./variantRules";
 
+import {
+  submitMove,
+  submitReserve,
+} from "./api";
+
 // ---------------- DRAG STATE ----------------
 
 // let draggedPiece = null;
@@ -103,7 +108,7 @@ function startDragging(event) {
     pieceCode[0];
 
   // wrong turn
-  if (pieceColor !== getTurn()) {
+  if (!canControlColor(pieceColor)) {
     return;
   }
 
@@ -156,7 +161,7 @@ function startReserveDragging(
   const pieceColor =
     pieceCode[0];
 
-  if (pieceColor !== getTurn()) {
+  if (!canControlColor(pieceColor)) {
     return;
   }
 
@@ -223,7 +228,7 @@ function moveFloatingPiece(x, y) {
 
 // ---------------- STOP DRAG ----------------
 
-function stopDragging(event) {
+async function stopDragging(event) {
 
   if (!appState.draggedPiece) return;
 
@@ -260,12 +265,10 @@ function stopDragging(event) {
       );
 
     if (legal) {
-      placeReserve(
+      await commitReserve(
         appState.draggedPiece,
         target
       );
-
-      appState.fen = getFen();
     }
 
     cleanupDrag();
@@ -280,15 +283,10 @@ function stopDragging(event) {
     return;
   }
 
-  const move =
-    tryMove(
+  await commitMove(
       appState.draggedFrom,
       target
     );
-
-    if (move) {
-        appState.fen = getFen();
-    }
 
   cleanupDrag();
 
@@ -315,6 +313,63 @@ function cleanupDrag() {
   appState.legalMoves = [];
 }
 
+function canControlColor(color) {
+  if (color !== getTurn()) {
+    return false;
+  }
+
+  if (!appState.online) {
+    return true;
+  }
+
+  return appState.playerColor === color;
+}
+
+async function commitMove(from, to) {
+  if (appState.online) {
+    return submitMove(
+      from,
+      to
+    );
+  }
+
+  const move =
+    tryMove(
+      from,
+      to
+    );
+
+  if (move) {
+    appState.fen = getFen();
+  }
+
+  return Boolean(move);
+}
+
+async function commitReserve(
+  pieceCode,
+  target
+) {
+  if (appState.online) {
+    return submitReserve(
+      pieceCode,
+      target
+    );
+  }
+
+  const placed =
+    placeReserve(
+      pieceCode,
+      target
+    );
+
+  if (placed) {
+    appState.fen = getFen();
+  }
+
+  return placed;
+}
+
 function rerender() {
 
   const boardElement =
@@ -331,14 +386,22 @@ function rerender() {
   const reserveElement =
     document.getElementById("reserve");
 
-    renderReserve(
+  renderReserve(
     reserveElement,
     appState.reservePieces,
     appState.selectedSource
   );
+
+  const statusElement =
+    document.getElementById("status");
+
+  if (statusElement) {
+    statusElement.textContent =
+      appState.statusMessage;
+  }
 }
 
-function handleBoardClick(event) {
+async function handleBoardClick(event) {
 
   // ignore clicks during drag
   if (appState.draggedPiece) {
@@ -357,7 +420,7 @@ function handleBoardClick(event) {
     const pieceCode =
       reservePiece.dataset.reserve;
 
-    if (pieceCode[0] !== getTurn()) {
+    if (!canControlColor(pieceCode[0])) {
       return;
     }
 
@@ -416,7 +479,7 @@ function handleBoardClick(event) {
       piece.type.toUpperCase();
 
     // wrong turn
-    if (piece.color !== getTurn()) {
+    if (!canControlColor(piece.color)) {
       return;
     }
 
@@ -465,13 +528,10 @@ function handleBoardClick(event) {
 
     if (legal) {
 
-      placeReserve(
+      await commitReserve(
         pieceCode,
         coordinate
       );
-
-      appState.fen =
-        getFen();
     }
 
     appState.selectedSource =
@@ -495,17 +555,10 @@ function handleBoardClick(event) {
     )
   ) {
 
-    const move =
-      tryMove(
+    await commitMove(
         appState.selectedSource,
         coordinate
       );
-
-    if (move) {
-
-      appState.fen =
-        getFen();
-    }
   }
 
   // clear selection

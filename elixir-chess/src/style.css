@@ -17,6 +17,32 @@ body {
   gap: 24px;
 }
 
+.game-bar {
+  width: 640px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 16px;
+
+  color: #f4f4f4;
+}
+
+.game-bar strong {
+  margin-right: 12px;
+}
+
+#room-label,
+.status {
+  color: #cfcfcf;
+  font-size: 14px;
+}
+
+.status {
+  text-align: right;
+}
+
 .board {
   width: 640px;
   height: 640px;
@@ -114,4 +140,24 @@ body {
   background: rgba(0, 0, 0, 0.28);
 
   position: absolute;
+}
+
+@media (max-width: 720px) {
+  .game-bar,
+  .board {
+    width: min(94vw, 640px);
+  }
+
+  .board {
+    height: min(94vw, 640px);
+  }
+
+  .game-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .status {
+    text-align: left;
+  }
 }

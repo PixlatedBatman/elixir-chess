@@ -25,4 +25,14 @@ export const appState = {
   draggingReserve: null,
   dragImage: null,
 
+  online: false,
+  roomId: null,
+  playerId: null,
+  playerColor: null,
+  players: {
+    w: null,
+    b: null,
+  },
+  statusMessage: "",
+
 };

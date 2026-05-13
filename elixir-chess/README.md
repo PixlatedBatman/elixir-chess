@@ -63,6 +63,13 @@ Frontend:
 - Vanilla JS
 - CSS
 
+Server:
+
+- Node HTTP server
+- Authoritative room state
+- Server-Sent Events for live updates
+- No extra realtime dependency yet
+
 Chess engine:
 
 - chess.js
@@ -79,11 +86,38 @@ Important:
 
 Main files:
 
+- server.js
 - game.js
 - state.js
 - render.js
 - interaction.js
 - variantRules.js
+- api.js
+
+---
+
+## Multiplayer Development
+
+Build and run the hosted version locally:
+
+```bash
+npm run build
+npm start
+```
+
+Then open:
+
+```text
+http://localhost:3000
+```
+
+The app creates a `?room=` URL automatically. Share that exact URL in another browser or private window:
+
+- first unique player joins as white
+- second unique player joins as black
+- later visitors spectate
+
+The server owns legal moves and reserve placements. The browser still uses chess.js locally for highlighting and immediate UI state.
 
 ---
 
