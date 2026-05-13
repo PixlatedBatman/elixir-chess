@@ -2,6 +2,10 @@ name = "elixir-chess-api"
 main = "src/index.js"
 compatibility_date = "2026-05-13"
 
+[[routes]]
+pattern = "api.elixirchess.karthikkashyap.com"
+custom_domain = true
+
 [[durable_objects.bindings]]
 name = "GAME_ROOM"
 class_name = "GameRoom"

@@ -4,17 +4,34 @@ import {
   canPlaceReserve,
 } from "../../shared/variantRules.js";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+const allowedOrigins = new Set([
+  "https://elixirchess.karthikkashyap.com",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+]);
+
+function getCorsHeaders(request) {
+  const origin =
+    request.headers.get("Origin");
+
+  const allowedOrigin =
+    allowedOrigins.has(origin)
+      ? origin
+      : "https://elixirchess.karthikkashyap.com";
+
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    Vary: "Origin",
+  };
+}
 
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
       return new Response(null, {
-        headers: corsHeaders,
+        headers: getCorsHeaders(request),
       });
     }
 
@@ -41,7 +58,8 @@ export default {
         {
           error: "Unknown API route",
         },
-        404
+        404,
+        request
       );
     }
 
@@ -66,7 +84,7 @@ export class GameRoom {
   async fetch(request) {
     if (request.method === "OPTIONS") {
       return new Response(null, {
-        headers: corsHeaders,
+        headers: getCorsHeaders(request),
       });
     }
 
@@ -357,19 +375,13 @@ export class GameRoom {
       stream.readable,
       {
         headers: {
-          ...corsHeaders,
+          ...getCorsHeaders(request),
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache, no-transform",
           Connection: "keep-alive",
         },
       }
     );
-  }
-
-  closeClient(client, heartbeat) {
-      clearInterval(heartbeat);
-      this.clients.delete(client);
-      writer.close().catch(() => {});
   }
 
   async getState() {
@@ -513,14 +525,15 @@ function finishReserveTurn(game) {
 
 function json(
   payload,
-  status = 200
+  status = 200,
+  request = new Request("https://elixirchess.karthikkashyap.com")
 ) {
   return new Response(
     JSON.stringify(payload),
     {
       status,
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(request),
         "Content-Type": "application/json; charset=utf-8",
       },
     }
