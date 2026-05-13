@@ -121,6 +121,8 @@ export function renderReserve(
 
       img.classList.add("piece");
 
+      img.draggable = false;
+
       img.dataset.reserve =
         pieceCode;
 

@@ -241,38 +241,42 @@ function handleBoardClick(event) {
     return;
   }
 
+  // ---------------- RESERVE CLICK ----------------
+
   const reservePiece =
     event.target.closest(
-        "[data-reserve]"
+      "[data-reserve]"
     );
 
-    if (reservePiece) {
+  if (reservePiece) {
 
-        const pieceCode =
-            reservePiece.dataset.reserve;
+    const pieceCode =
+      reservePiece.dataset.reserve;
 
-        appState.selectedSource =
-            `reserve:${pieceCode}`;
+    appState.selectedSource =
+      `reserve:${pieceCode}`;
 
-        appState.selectedSquare =
-            null;
+    appState.selectedSquare =
+      null;
 
-        const board =
-            getBoard();
+    const board =
+      getBoard();
 
-        const color =
-            pieceCode[0];
+    const color =
+      pieceCode[0];
 
-        appState.legalMoves =
-            getReserveSquares(
-            color,
-            board
-            );
+    appState.legalMoves =
+      getReserveSquares(
+        color,
+        board
+      );
 
-        rerender();
+    rerender();
 
-        return;
-    }
+    return;
+  }
+
+  // ---------------- BOARD CLICK ----------------
 
   const square =
     event.target.closest(".square");
@@ -285,7 +289,7 @@ function handleBoardClick(event) {
   const board =
     getBoard();
 
-  // convert coordinate → row/col
+  // coordinate -> board indices
   const file =
     coordinate.charCodeAt(0) - 97;
 
@@ -295,7 +299,7 @@ function handleBoardClick(event) {
   const piece =
     board[rank][file];
 
-  // ---------------- CLICK PIECE ----------------
+  // ---------------- CLICK BOARD PIECE ----------------
 
   if (piece) {
 
@@ -333,85 +337,84 @@ function handleBoardClick(event) {
 
   // ---------------- CLICK TARGET ----------------
 
-    // reserve placement
-    if (
+  // reserve placement
+  if (
     appState.selectedSource?.startsWith(
-        "reserve:"
+      "reserve:"
     )
-    ) {
+  ) {
 
     const pieceCode =
-        appState.selectedSource
+      appState.selectedSource
         .split(":")[1];
 
     const legal =
-        canPlaceReserve(
+      canPlaceReserve(
         appState.fen,
         pieceCode,
         coordinate
-        );
+      );
 
     if (legal) {
 
-        game.put(
+      game.put(
         {
-            type:
+          type:
             pieceCode[1]
-                .toLowerCase(),
+              .toLowerCase(),
 
-            color:
+          color:
             pieceCode[0],
         },
         coordinate
-        );
+      );
 
-        appState.fen =
+      appState.fen =
         getFen();
     }
 
-    // clear selection
     appState.selectedSource =
-        null;
+      null;
 
     appState.selectedSquare =
-        null;
+      null;
 
     appState.legalMoves = [];
 
     rerender();
 
     return;
-    }
+  }
 
-    // normal board moves
-    if (
+  // normal board move
+  if (
     appState.selectedSource &&
     appState.legalMoves.includes(
-        coordinate
+      coordinate
     )
-    ) {
+  ) {
 
     const move =
-        tryMove(
+      tryMove(
         appState.selectedSource,
         coordinate
-        );
+      );
 
     if (move) {
 
-        appState.fen =
+      appState.fen =
         getFen();
-        }
     }
+  }
 
-    // clear selection
-    appState.selectedSource =
+  // clear selection
+  appState.selectedSource =
     null;
 
-    appState.selectedSquare =
+  appState.selectedSquare =
     null;
 
-    appState.legalMoves = [];
+  appState.legalMoves = [];
 
-    rerender();
+  rerender();
 }

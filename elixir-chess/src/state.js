@@ -22,4 +22,7 @@ export const appState = {
 
   selectedSource: null,
 
+  draggingReserve: null,
+  dragImage: null,
+
 };
