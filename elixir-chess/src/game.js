@@ -2,9 +2,9 @@ import { Chess } from "chess.js";
 
 export const game = new Chess();
 
-export function getBoard() {
-  return game.board();
-}
+// export function getBoard() {
+//   return game.board();
+// }
 
 export function getTurn() {
   return game.turn();
@@ -23,4 +23,8 @@ export function getLegalMoves(square) {
     square,
     verbose: true,
   });
+}
+
+export function getFen() {
+  return game.fen();
 }
