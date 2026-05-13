@@ -104,34 +104,85 @@ export async function joinRoom() {
 export function subscribeToRoom(
   onUpdate
 ) {
-  const events =
-    new EventSource(
-      `${API_BASE_URL}/api/rooms/${appState.roomId}/events?playerId=${appState.playerId}`
+  let socket = null;
+  let reconnectTimer = null;
+  let closedByClient = false;
+
+  const connect = () => {
+    socket =
+      new WebSocket(
+        `${getWebSocketBaseUrl()}/api/rooms/${appState.roomId}/ws?playerId=${encodeURIComponent(appState.playerId)}`
+      );
+
+    socket.addEventListener(
+      "message",
+      (event) => {
+        const payload =
+          JSON.parse(event.data);
+
+        applyServerState(payload);
+
+        onUpdate?.(payload);
+      }
     );
 
-  events.addEventListener(
-    "state",
-    (event) => {
-      const payload =
-        JSON.parse(event.data);
+    socket.addEventListener(
+      "close",
+      () => {
+        if (closedByClient) {
+          return;
+        }
 
-      applyServerState(payload);
+        appState.statusMessage =
+          "Connection interrupted. Reconnecting...";
 
-      onUpdate?.(payload);
-    }
-  );
+        onUpdate?.();
 
-  events.addEventListener(
-    "error",
-    () => {
-      appState.statusMessage =
-        "Connection interrupted. Reconnecting...";
+        reconnectTimer =
+          window.setTimeout(
+            connect,
+            1000
+          );
+      }
+    );
 
-      onUpdate?.();
-    }
-  );
+    socket.addEventListener(
+      "error",
+      () => {
+        socket.close();
+      }
+    );
+  };
 
-  return events;
+  connect();
+
+  return {
+    close() {
+      closedByClient = true;
+      window.clearTimeout(reconnectTimer);
+      socket?.close();
+    },
+  };
+}
+
+function getWebSocketBaseUrl() {
+  if (API_BASE_URL.startsWith("https://")) {
+    return API_BASE_URL.replace(
+      "https://",
+      "wss://"
+    );
+  }
+
+  if (API_BASE_URL.startsWith("http://")) {
+    return API_BASE_URL.replace(
+      "http://",
+      "ws://"
+    );
+  }
+
+  return window.location.protocol === "https:"
+    ? `wss://${window.location.host}`
+    : `ws://${window.location.host}`;
 }
 
 export async function submitMove(

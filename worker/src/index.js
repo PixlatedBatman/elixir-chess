@@ -10,6 +10,14 @@ const allowedOrigins = new Set([
   "http://127.0.0.1:5173",
 ]);
 
+function isAllowedOrigin(request) {
+  const origin =
+    request.headers.get("Origin");
+
+  return !origin ||
+    allowedOrigins.has(origin);
+}
+
 function getCorsHeaders(request) {
   const origin =
     request.headers.get("Origin");
@@ -101,9 +109,9 @@ export class GameRoom {
 
     if (
       request.method === "GET" &&
-      action === "events"
+      action === "ws"
     ) {
-      return this.handleEvents(
+      return this.handleWebSocket(
         request,
         url
       );
@@ -315,30 +323,69 @@ export class GameRoom {
     );
   }
 
-  async handleEvents(
+  async handleWebSocket(
     request,
     url
   ) {
+    if (!isAllowedOrigin(request)) {
+      return json(
+        {
+          error: "Origin not allowed",
+        },
+        403,
+        request
+      );
+    }
+
+    if (
+      request.headers.get("Upgrade")?.toLowerCase() !==
+      "websocket"
+    ) {
+      return json(
+        {
+          error: "Expected WebSocket upgrade",
+        },
+        426,
+        request
+      );
+    }
+
     const playerId =
       url.searchParams.get("playerId");
 
-    const stream =
-      new TransformStream();
+    const pair =
+      new WebSocketPair();
 
-    const writer =
-      stream.writable.getWriter();
+    const [clientSocket, serverSocket] =
+      Object.values(pair);
+
+    serverSocket.accept();
 
     const client = {
       playerId,
-      writer,
+      socket: serverSocket,
     };
 
     this.clients.add(client);
 
+    serverSocket.addEventListener(
+      "close",
+      () => {
+        this.clients.delete(client);
+      }
+    );
+
+    serverSocket.addEventListener(
+      "error",
+      () => {
+        this.clients.delete(client);
+      }
+    );
+
     const state =
       await this.getState();
 
-    await writeEvent(
+    sendSocketState(
       client,
       serializeState(
         state,
@@ -349,39 +396,10 @@ export class GameRoom {
       )
     );
 
-    const heartbeat =
-      setInterval(
-        () => {
-          writer.write(
-            encode(": keep-alive\n\n")
-          );
-        },
-        25000
-      );
-
-    request.signal.addEventListener(
-      "abort",
-      () => {
-        clearInterval(heartbeat);
-        this.clients.delete(client);
-        writer.close().catch(() => {});
-      },
-      {
-        once: true,
-      }
-    );
-
-    return new Response(
-      stream.readable,
-      {
-        headers: {
-          ...getCorsHeaders(request),
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache, no-transform",
-          Connection: "keep-alive",
-        },
-      }
-    );
+    return new Response(null, {
+      status: 101,
+      webSocket: clientSocket,
+    });
   }
 
   async getState() {
@@ -418,18 +436,21 @@ export class GameRoom {
 
   broadcast(state) {
     for (const client of this.clients) {
-      writeEvent(
-        client,
-        serializeState(
-          state,
-          getRole(
+      const sent =
+        sendSocketState(
+          client,
+          serializeState(
             state,
-            client.playerId
+            getRole(
+              state,
+              client.playerId
+            )
           )
-        )
-      ).catch(() => {
+        );
+
+      if (!sent) {
         this.clients.delete(client);
-      });
+      }
     }
   }
 }
@@ -540,18 +561,17 @@ function json(
   );
 }
 
-function writeEvent(
+function sendSocketState(
   client,
   payload
 ) {
-  return client.writer.write(
-    encode(
-      `event: state\ndata: ${JSON.stringify(payload)}\n\n`
-    )
-  );
-}
+  try {
+    client.socket.send(
+      JSON.stringify(payload)
+    );
 
-function encode(value) {
-  return new TextEncoder()
-    .encode(value);
+    return true;
+  } catch {
+    return false;
+  }
 }
