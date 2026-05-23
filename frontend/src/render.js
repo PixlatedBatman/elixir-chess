@@ -21,6 +21,14 @@ export function createBoard(
   const board =
     tempGame.board();
 
+  const checkedKingSquare =
+    tempGame.inCheck()
+      ? getKingSquare(
+          board,
+          tempGame.turn()
+        )
+      : null;
+
   const rowIndexes =
     orientation === "b"
       ? [7, 6, 5, 4, 3, 2, 1, 0]
@@ -67,6 +75,9 @@ export function createBoard(
         );
       }
 
+      const piece =
+        board[row][col];
+
       // legal move highlight
       if (
         legalMoves.includes(
@@ -74,7 +85,9 @@ export function createBoard(
         )
       ) {
         square.classList.add(
-          "legal-move"
+          piece
+            ? "legal-capture"
+            : "legal-move"
         );
       }
 
@@ -88,8 +101,11 @@ export function createBoard(
         );
       }
 
-      const piece =
-        board[row][col];
+      if (coordinate === checkedKingSquare) {
+        square.classList.add(
+          "king-in-check"
+        );
+      }
 
       if (
         piece &&
@@ -122,6 +138,30 @@ export function createBoard(
       );
     }
   }
+}
+
+function getKingSquare(board, color) {
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const piece =
+        board[row][col];
+
+      if (
+        piece?.type === "k" &&
+        piece.color === color
+      ) {
+        const file =
+          "abcdefgh"[col];
+
+        const rank =
+          8 - row;
+
+        return `${file}${rank}`;
+      }
+    }
+  }
+
+  return null;
 }
 
 export function renderReserve(
