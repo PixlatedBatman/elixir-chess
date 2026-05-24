@@ -2,7 +2,19 @@ import { Chess } from "chess.js";
 
 import {
   canPlaceReserve,
+  getReserveSquares,
 } from "../../shared/variantRules.js";
+
+const INITIAL_ELIXIR = 3;
+const MOVE_ELIXIR_GAIN = 1;
+
+const RESERVE_COSTS = {
+  P: 1,
+  B: 3,
+  N: 3,
+  R: 5,
+  Q: 7,
+};
 
 const allowedOrigins = new Set([
   "https://elixirchess.karthikkashyap.com",
@@ -56,6 +68,42 @@ export default {
       resource,
       roomId,
     ] = parts;
+
+    if (
+      api === "api" &&
+      resource === "rooms" &&
+      !roomId &&
+      request.method === "POST"
+    ) {
+      const createdRoomId =
+        createRoomId();
+
+      const id =
+        env.GAME_ROOM.idFromName(
+          createdRoomId
+        );
+
+      const room =
+        env.GAME_ROOM.get(id);
+
+      await room.fetch(
+        new Request(
+          `${url.origin}/api/rooms/${createdRoomId}/create`,
+          {
+            method: "POST",
+            headers: request.headers,
+          }
+        )
+      );
+
+      return json(
+        {
+          roomId: createdRoomId,
+        },
+        200,
+        request
+      );
+    }
 
     if (
       api !== "api" ||
@@ -122,42 +170,128 @@ export class GameRoom {
         {
           error: "Method not allowed",
         },
-        405
+        405,
+        request
       );
+    }
+
+    if (action === "create") {
+      return this.handleCreate(request);
     }
 
     const body =
       await request.json();
 
     if (action === "join") {
-      return this.handleJoin(body);
+      return this.handleJoin(
+        body,
+        request
+      );
     }
 
     if (action === "move") {
-      return this.handleMove(body);
+      return this.handleMove(
+        body,
+        request
+      );
     }
 
     if (action === "reserve") {
-      return this.handleReserve(body);
+      return this.handleReserve(
+        body,
+        request
+      );
+    }
+
+    if (action === "resign") {
+      return this.handleResign(
+        body,
+        request
+      );
+    }
+
+    if (action === "draw") {
+      return this.handleDraw(
+        body,
+        request
+      );
     }
 
     return json(
       {
         error: "Unknown room action",
       },
-      404
+      404,
+      request
     );
   }
 
-  async handleJoin(body) {
+  async handleCreate(request) {
     const state =
       await this.getState();
 
-    const role =
+    state.created = true;
+    state.fen = new Chess().fen();
+    state.players = {
+      w: null,
+      b: null,
+      player1: null,
+      player2: null,
+    };
+    state.lastMove = null;
+    state.gameOver = null;
+    state.drawOffer = null;
+    state.elixir = {
+      w: INITIAL_ELIXIR,
+      b: INITIAL_ELIXIR,
+    };
+
+    await this.saveState(state);
+
+    return json(
+      {
+        ok: true,
+      },
+      200,
+      request
+    );
+  }
+
+  async handleJoin(
+    body,
+    request
+  ) {
+    const state =
+      await this.getState();
+
+    if (!state.created) {
+      return json(
+        {
+          error: "Room not found",
+        },
+        404,
+        request
+      );
+    }
+
+    let role =
       assignRole(
         state,
         body.playerId
       );
+
+    if (
+      state.players.player1 &&
+      state.players.player2 &&
+      (!state.players.w || !state.players.b)
+    ) {
+      assignRandomColors(state);
+      role =
+        getRole(
+          state,
+          body.playerId
+        );
+    }
 
     await this.saveState(state);
 
@@ -169,10 +303,17 @@ export class GameRoom {
 
     this.broadcast(state);
 
-    return json(payload);
+    return json(
+      payload,
+      200,
+      request
+    );
   }
 
-  async handleMove(body) {
+  async handleMove(
+    body,
+    request
+  ) {
     const state =
       await this.getState();
 
@@ -182,6 +323,16 @@ export class GameRoom {
         body.playerId
       );
 
+    if (state.gameOver) {
+      return json(
+        {
+          error: "Game is over",
+        },
+        400,
+        request
+      );
+    }
+
     const game =
       new Chess(state.fen);
 
@@ -190,7 +341,8 @@ export class GameRoom {
         {
           error: "It is not your turn",
         },
-        403
+        403,
+        request
       );
     }
 
@@ -206,7 +358,8 @@ export class GameRoom {
         {
           error: "Illegal move",
         },
-        400
+        400,
+        request
       );
     }
 
@@ -218,6 +371,10 @@ export class GameRoom {
         move.to,
       ],
     };
+    state.drawOffer = null;
+    state.elixir = normalizeElixir(state.elixir);
+    state.elixir[role] += MOVE_ELIXIR_GAIN;
+    updateGameOver(state);
 
     await this.saveState(state);
 
@@ -227,11 +384,16 @@ export class GameRoom {
       serializeState(
         state,
         role
-      )
+      ),
+      200,
+      request
     );
   }
 
-  async handleReserve(body) {
+  async handleReserve(
+    body,
+    request
+  ) {
     const state =
       await this.getState();
 
@@ -241,6 +403,16 @@ export class GameRoom {
         body.playerId
       );
 
+    if (state.gameOver) {
+      return json(
+        {
+          error: "Game is over",
+        },
+        400,
+        request
+      );
+    }
+
     const game =
       new Chess(state.fen);
 
@@ -249,7 +421,8 @@ export class GameRoom {
         {
           error: "It is not your turn",
         },
-        403
+        403,
+        request
       );
     }
 
@@ -261,7 +434,24 @@ export class GameRoom {
         {
           error: "That reserve piece is not yours",
         },
-        403
+        403,
+        request
+      );
+    }
+
+    const cost =
+      getReserveCost(body.pieceCode);
+
+    state.elixir =
+      normalizeElixir(state.elixir);
+
+    if (state.elixir[role] < cost) {
+      return json(
+        {
+          error: "Not enough Elixir",
+        },
+        400,
+        request
       );
     }
 
@@ -277,7 +467,8 @@ export class GameRoom {
         {
           error: "Illegal reserve placement",
         },
-        400
+        400,
+        request
       );
     }
 
@@ -297,7 +488,8 @@ export class GameRoom {
         {
           error: "Could not place reserve piece",
         },
-        400
+        400,
+        request
       );
     }
 
@@ -310,6 +502,10 @@ export class GameRoom {
         body.target,
       ],
     };
+    state.drawOffer = null;
+    state.elixir = normalizeElixir(state.elixir);
+    state.elixir[role] -= cost;
+    updateGameOver(state);
 
     await this.saveState(state);
 
@@ -319,7 +515,150 @@ export class GameRoom {
       serializeState(
         state,
         role
-      )
+      ),
+      200,
+      request
+    );
+  }
+
+
+  async handleResign(
+    body,
+    request
+  ) {
+    const state =
+      await this.getState();
+
+    const role =
+      getRole(
+        state,
+        body.playerId
+      );
+
+    if (
+      role !== "w" &&
+      role !== "b"
+    ) {
+      return json(
+        {
+          error: "Only players can resign",
+        },
+        403,
+        request
+      );
+    }
+
+    if (state.gameOver) {
+      return json(
+        serializeState(
+          state,
+          role
+        ),
+        200,
+        request
+      );
+    }
+
+    state.gameOver = {
+      reason: "resignation",
+      winner: oppositeColor(role),
+    };
+    state.drawOffer = null;
+
+    await this.saveState(state);
+
+    this.broadcast(state);
+
+    return json(
+      serializeState(
+        state,
+        role
+      ),
+      200,
+      request
+    );
+  }
+
+  async handleDraw(
+    body,
+    request
+  ) {
+    const state =
+      await this.getState();
+
+    const role =
+      getRole(
+        state,
+        body.playerId
+      );
+
+    if (
+      role !== "w" &&
+      role !== "b"
+    ) {
+      return json(
+        {
+          error: "Only players can offer a draw",
+        },
+        403,
+        request
+      );
+    }
+
+    if (state.gameOver) {
+      return json(
+        serializeState(
+          state,
+          role
+        ),
+        200,
+        request
+      );
+    }
+
+    if (body.response === "accept") {
+      if (state.drawOffer !== oppositeColor(role)) {
+        return json(
+          {
+            error: "No draw offer to accept",
+          },
+          400,
+          request
+        );
+      }
+
+      state.gameOver = {
+        reason: "draw",
+        winner: null,
+      };
+      state.drawOffer = null;
+    } else if (body.response === "decline") {
+      if (state.drawOffer !== oppositeColor(role)) {
+        return json(
+          {
+            error: "No draw offer to decline",
+          },
+          400,
+          request
+        );
+      }
+
+      state.drawOffer = null;
+    } else {
+      state.drawOffer = role;
+    }
+
+    await this.saveState(state);
+
+    this.broadcast(state);
+
+    return json(
+      serializeState(
+        state,
+        role
+      ),
+      200,
+      request
     );
   }
 
@@ -405,32 +744,51 @@ export class GameRoom {
   async getState() {
     const stored =
       await this.ctx.storage.get([
+        "created",
         "fen",
         "players",
         "lastMove",
+        "gameOver",
+        "drawOffer",
+        "elixir",
       ]);
 
     return {
+      created:
+        stored.get("created") ||
+        false,
       fen:
         stored.get("fen") ||
         new Chess().fen(),
       players:
-        stored.get("players") ||
-        {
-          w: null,
-          b: null,
-        },
+        normalizePlayers(
+          stored.get("players")
+        ),
       lastMove:
         stored.get("lastMove") ||
         null,
+      gameOver:
+        stored.get("gameOver") ||
+        null,
+      drawOffer:
+        stored.get("drawOffer") ||
+        null,
+      elixir:
+        normalizeElixir(
+          stored.get("elixir")
+        ),
     };
   }
 
   async saveState(state) {
     await this.ctx.storage.put({
+      created: state.created,
       fen: state.fen,
       players: state.players,
       lastMove: state.lastMove,
+      gameOver: state.gameOver,
+      drawOffer: state.drawOffer,
+      elixir: normalizeElixir(state.elixir),
     });
   }
 
@@ -463,6 +821,9 @@ function assignRole(
     return "spectator";
   }
 
+  state.players =
+    normalizePlayers(state.players);
+
   if (state.players.w === playerId) {
     return "w";
   }
@@ -471,14 +832,28 @@ function assignRole(
     return "b";
   }
 
-  if (!state.players.w) {
-    state.players.w = playerId;
-    return "w";
+  if (state.players.player1 === playerId) {
+    return getRole(
+      state,
+      playerId
+    );
   }
 
-  if (!state.players.b) {
-    state.players.b = playerId;
-    return "b";
+  if (state.players.player2 === playerId) {
+    return getRole(
+      state,
+      playerId
+    );
+  }
+
+  if (!state.players.player1) {
+    state.players.player1 = playerId;
+    return "pending";
+  }
+
+  if (!state.players.player2) {
+    state.players.player2 = playerId;
+    return "pending";
   }
 
   return "spectator";
@@ -494,6 +869,13 @@ function getRole(
 
   if (state.players.b === playerId) {
     return "b";
+  }
+
+  if (
+    state.players.player1 === playerId ||
+    state.players.player2 === playerId
+  ) {
+    return "pending";
   }
 
   return "spectator";
@@ -513,9 +895,120 @@ function serializeState(
     players: {
       w: Boolean(state.players.w),
       b: Boolean(state.players.b),
+      player1: Boolean(state.players.player1),
+      player2: Boolean(state.players.player2),
     },
+    drawOffer: state.drawOffer,
+    gameOver: state.gameOver,
+    elixir: normalizeElixir(state.elixir),
     lastMove: state.lastMove,
   };
+}
+
+function normalizeElixir(elixir) {
+  return {
+    w: Number.isFinite(elixir?.w)
+      ? elixir.w
+      : INITIAL_ELIXIR,
+    b: Number.isFinite(elixir?.b)
+      ? elixir.b
+      : INITIAL_ELIXIR,
+  };
+}
+
+function normalizePlayers(players) {
+  return {
+    w: players?.w || null,
+    b: players?.b || null,
+    player1: players?.player1 || players?.w || null,
+    player2: players?.player2 || players?.b || null,
+  };
+}
+
+function assignRandomColors(state) {
+  const player1White =
+    crypto.getRandomValues(
+      new Uint8Array(1)
+    )[0] < 128;
+
+  state.players.w =
+    player1White
+      ? state.players.player1
+      : state.players.player2;
+
+  state.players.b =
+    player1White
+      ? state.players.player2
+      : state.players.player1;
+}
+
+function updateGameOver(state) {
+  const game =
+    new Chess(state.fen);
+
+  if (
+    game.isCheckmate() &&
+    !hasLegalReservePlacement(
+      state.fen,
+      game.turn(),
+      normalizeElixir(state.elixir)[game.turn()]
+    )
+  ) {
+    state.gameOver = {
+      reason: "checkmate",
+      winner: oppositeColor(game.turn()),
+    };
+
+    return;
+  }
+
+  if (game.isDraw()) {
+    state.gameOver = {
+      reason: "draw",
+      winner: null,
+    };
+  }
+}
+
+function oppositeColor(color) {
+  return color === "w"
+    ? "b"
+    : "w";
+}
+
+function hasLegalReservePlacement(fen, color, elixir) {
+  const game =
+    new Chess(fen);
+
+  const squares =
+    getReserveSquares(
+      color,
+      game.board()
+    );
+
+  const pieces = [
+    "Q",
+    "R",
+    "B",
+    "N",
+    "P",
+  ];
+
+  return pieces.some((piece) =>
+    RESERVE_COSTS[piece] <= elixir &&
+    squares.some((square) =>
+      canPlaceReserve(
+        fen,
+        `${color}${piece}`,
+        square
+      )
+    )
+  );
+}
+
+function getReserveCost(pieceCode) {
+  return RESERVE_COSTS[pieceCode?.[1]] ||
+    Number.POSITIVE_INFINITY;
 }
 
 function finishReserveTurn(game) {
@@ -542,6 +1035,11 @@ function finishReserveTurn(game) {
   game.load(
     fenParts.join(" ")
   );
+}
+
+function createRoomId() {
+  return crypto.randomUUID()
+    .slice(0, 8);
 }
 
 function json(

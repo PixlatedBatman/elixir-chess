@@ -6,13 +6,12 @@ import {
   setFen,
 } from "./game";
 
+const DEFAULT_API_BASE_URL =
+  "https://api.elixirchess.karthikkashyap.com";
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  (
-    import.meta.env.PROD
-      ? "https://api.elixirchess.karthikkashyap.com"
-      : ""
-  );
+  DEFAULT_API_BASE_URL;
 
 export function getRoomId() {
   const params =
@@ -20,27 +19,25 @@ export function getRoomId() {
       window.location.search
     );
 
-  let roomId =
-    params.get("room");
+  return params.get("room");
+}
 
-  if (!roomId) {
-    roomId =
-      crypto.randomUUID()
-        .slice(0, 8);
-
-    params.set(
-      "room",
-      roomId
+export async function createRoom() {
+  const response =
+    await fetch(
+      `${API_BASE_URL}/api/rooms`,
+      {
+        method: "POST",
+      }
     );
 
-    window.history.replaceState(
-      null,
-      "",
-      `${window.location.pathname}?${params}`
+  if (!response.ok) {
+    throw new Error(
+      "Could not create room"
     );
   }
 
-  return roomId;
+  return response.json();
 }
 
 export function getPlayerId() {
@@ -68,6 +65,12 @@ export function getPlayerId() {
 export async function joinRoom() {
   appState.roomId =
     getRoomId();
+
+  if (!appState.roomId) {
+    throw new Error(
+      "No room selected"
+    );
+  }
 
   appState.playerId =
     getPlayerId();
@@ -211,6 +214,24 @@ export async function submitReserve(
   );
 }
 
+export async function submitResign() {
+  return postRoomAction(
+    "resign",
+    {}
+  );
+}
+
+export async function submitDraw(
+  response = null
+) {
+  return postRoomAction(
+    "draw",
+    response
+      ? { response }
+      : {}
+  );
+}
+
 function applyServerState(payload) {
   appState.online = true;
   appState.fen = payload.fen;
@@ -218,6 +239,16 @@ function applyServerState(payload) {
     payload.role;
   appState.players =
     payload.players;
+  appState.drawOffer =
+    payload.drawOffer || null;
+  appState.gameOver =
+    payload.gameOver || null;
+  appState.elixir =
+    payload.elixir ||
+    {
+      w: 3,
+      b: 3,
+    };
   appState.lastMove =
     payload.lastMove || null;
   appState.boardOrientation =
@@ -293,8 +324,18 @@ async function postRoomAction(
 }
 
 function getStatusMessage(payload) {
+  if (payload.gameOver) {
+    return getGameOverMessage(
+      payload.gameOver
+    );
+  }
+
   if (payload.role === "spectator") {
     return "Spectating this room";
+  }
+
+  if (payload.role !== "w" && payload.role !== "b") {
+    return "Waiting for Player 2.";
   }
 
   const label =
@@ -302,10 +343,47 @@ function getStatusMessage(payload) {
       ? "White"
       : "Black";
 
+  const waitingFor =
+    !payload.players.player1
+      ? "Player 1"
+      : !payload.players.player2
+        ? "Player 2"
+        : null;
+
+  if (waitingFor) {
+    return `${label} player. Waiting for ${waitingFor}.`;
+  }
+
+  if (payload.drawOffer) {
+    const offerLabel =
+      payload.drawOffer === "w"
+        ? "White"
+        : "Black";
+
+    return `${offerLabel} offered a draw.`;
+  }
+
   const turnLabel =
     payload.turn === "w"
       ? "White"
       : "Black";
 
   return `${label} player. ${turnLabel} to move.`;
+}
+
+function getGameOverMessage(gameOver) {
+  if (gameOver.reason === "draw") {
+    return "Game over. Draw.";
+  }
+
+  const winner =
+    gameOver.winner === "w"
+      ? "White"
+      : "Black";
+
+  if (gameOver.reason === "resignation") {
+    return `Game over. ${winner} won by resignation.`;
+  }
+
+  return `Game over. ${winner} won by checkmate.`;
 }

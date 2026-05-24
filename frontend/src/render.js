@@ -3,6 +3,14 @@ import { Chess } from "chess.js";
 const PIECE_THEME =
   "https://chessboardjs.com/img/chesspieces/wikipedia/";
 
+const RESERVE_COSTS = {
+  P: 1,
+  B: 3,
+  N: 3,
+  R: 5,
+  Q: 7,
+};
+
 export function createBoard(
   boardElement,
   fen,
@@ -167,13 +175,36 @@ function getKingSquare(board, color) {
 export function renderReserve(
   reserveElement,
   reservePieces,
-  selectedSource
+  selectedSource,
+  elixir = null,
+  playerColor = null
 ) {
 
   reserveElement.innerHTML = "";
 
   reservePieces.forEach(
     (pieceCode) => {
+
+      const item =
+        document.createElement("div");
+
+      item.classList.add(
+        "reserve-item"
+      );
+
+      const cost =
+        RESERVE_COSTS[pieceCode[1]];
+
+      const affordable =
+        !playerColor ||
+        pieceCode[0] !== playerColor ||
+        elixir?.[playerColor] >= cost;
+
+      if (!affordable) {
+        item.classList.add(
+          "unaffordable"
+        );
+      }
 
       const img =
         document.createElement("img");
@@ -188,6 +219,16 @@ export function renderReserve(
       img.dataset.reserve =
         pieceCode;
 
+      const label =
+        document.createElement("span");
+
+      label.classList.add(
+        "reserve-cost"
+      );
+
+      label.textContent =
+        `${cost} Elixir`;
+
       // selected reserve highlight
       if (
         selectedSource ===
@@ -198,8 +239,11 @@ export function renderReserve(
         );
       }
 
+      item.appendChild(img);
+      item.appendChild(label);
+
       reserveElement.appendChild(
-        img
+        item
       );
     }
   );

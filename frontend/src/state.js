@@ -35,6 +35,14 @@ export const appState = {
   players: {
     w: null,
     b: null,
+    player1: null,
+    player2: null,
+  },
+  drawOffer: null,
+  gameOver: null,
+  elixir: {
+    w: 3,
+    b: 3,
   },
   statusMessage: "",
 

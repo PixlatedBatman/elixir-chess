@@ -26,6 +26,14 @@ import {
   submitReserve,
 } from "./api";
 
+const RESERVE_COSTS = {
+  P: 1,
+  B: 3,
+  N: 3,
+  R: 5,
+  Q: 7,
+};
+
 // ---------------- DRAG STATE ----------------
 
 // let draggedPiece = null;
@@ -82,6 +90,10 @@ function startDragging(event) {
     event.target.closest(".piece");
 
   if (!piece) return;
+
+  if (appState.gameOver) {
+    return;
+  }
 
   event.preventDefault();
 
@@ -162,6 +174,13 @@ function startReserveDragging(
     pieceCode[0];
 
   if (!canControlColor(pieceColor)) {
+    return;
+  }
+
+  if (!canAffordReserve(pieceCode)) {
+    appState.statusMessage =
+      "Not enough Elixir";
+    rerender();
     return;
   }
 
@@ -313,6 +332,21 @@ function cleanupDrag() {
   appState.legalMoves = [];
 }
 
+function canAffordReserve(pieceCode) {
+  if (!appState.online) {
+    return true;
+  }
+
+  const color =
+    pieceCode[0];
+
+  const cost =
+    RESERVE_COSTS[pieceCode[1]] ||
+    Number.POSITIVE_INFINITY;
+
+  return appState.elixir?.[color] >= cost;
+}
+
 function canControlColor(color) {
   if (color !== getTurn()) {
     return false;
@@ -404,7 +438,9 @@ function rerender() {
   renderReserve(
     reserveElement,
     appState.reservePieces,
-    appState.selectedSource
+    appState.selectedSource,
+    appState.elixir,
+    appState.playerColor
   );
 
   const statusElement =
@@ -417,6 +453,10 @@ function rerender() {
 }
 
 async function handleBoardClick(event) {
+
+  if (appState.gameOver) {
+    return;
+  }
 
   // ignore clicks during drag
   if (appState.draggedPiece) {
@@ -436,6 +476,13 @@ async function handleBoardClick(event) {
       reservePiece.dataset.reserve;
 
     if (!canControlColor(pieceCode[0])) {
+      return;
+    }
+
+    if (!canAffordReserve(pieceCode)) {
+      appState.statusMessage =
+        "Not enough Elixir";
+      rerender();
       return;
     }
 
