@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local run helpers
+run-local-backend.sh
+run-local-frontend.sh
+worker/.wrangler/

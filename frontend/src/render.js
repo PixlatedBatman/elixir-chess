@@ -3,6 +3,14 @@ import { Chess } from "chess.js";
 const PIECE_THEME =
   "https://chessboardjs.com/img/chesspieces/wikipedia/";
 
+const RESERVE_COSTS = {
+  P: 1,
+  B: 3,
+  N: 3,
+  R: 5,
+  Q: 7,
+};
+
 export function createBoard(
   boardElement,
   fen,
@@ -20,6 +28,14 @@ export function createBoard(
 
   const board =
     tempGame.board();
+
+  const checkedKingSquare =
+    tempGame.inCheck()
+      ? getKingSquare(
+          board,
+          tempGame.turn()
+        )
+      : null;
 
   const rowIndexes =
     orientation === "b"
@@ -67,6 +83,9 @@ export function createBoard(
         );
       }
 
+      const piece =
+        board[row][col];
+
       // legal move highlight
       if (
         legalMoves.includes(
@@ -74,7 +93,9 @@ export function createBoard(
         )
       ) {
         square.classList.add(
-          "legal-move"
+          piece
+            ? "legal-capture"
+            : "legal-move"
         );
       }
 
@@ -88,8 +109,11 @@ export function createBoard(
         );
       }
 
-      const piece =
-        board[row][col];
+      if (coordinate === checkedKingSquare) {
+        square.classList.add(
+          "king-in-check"
+        );
+      }
 
       if (
         piece &&
@@ -124,16 +148,63 @@ export function createBoard(
   }
 }
 
+function getKingSquare(board, color) {
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const piece =
+        board[row][col];
+
+      if (
+        piece?.type === "k" &&
+        piece.color === color
+      ) {
+        const file =
+          "abcdefgh"[col];
+
+        const rank =
+          8 - row;
+
+        return `${file}${rank}`;
+      }
+    }
+  }
+
+  return null;
+}
+
 export function renderReserve(
   reserveElement,
   reservePieces,
-  selectedSource
+  selectedSource,
+  elixir = null,
+  playerColor = null
 ) {
 
   reserveElement.innerHTML = "";
 
   reservePieces.forEach(
     (pieceCode) => {
+
+      const item =
+        document.createElement("div");
+
+      item.classList.add(
+        "reserve-item"
+      );
+
+      const cost =
+        RESERVE_COSTS[pieceCode[1]];
+
+      const affordable =
+        !playerColor ||
+        pieceCode[0] !== playerColor ||
+        elixir?.[playerColor] >= cost;
+
+      if (!affordable) {
+        item.classList.add(
+          "unaffordable"
+        );
+      }
 
       const img =
         document.createElement("img");
@@ -148,6 +219,16 @@ export function renderReserve(
       img.dataset.reserve =
         pieceCode;
 
+      const label =
+        document.createElement("span");
+
+      label.classList.add(
+        "reserve-cost"
+      );
+
+      label.textContent =
+        `${cost} Elixir`;
+
       // selected reserve highlight
       if (
         selectedSource ===
@@ -158,8 +239,11 @@ export function renderReserve(
         );
       }
 
+      item.appendChild(img);
+      item.appendChild(label);
+
       reserveElement.appendChild(
-        img
+        item
       );
     }
   );
