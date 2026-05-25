@@ -83,8 +83,16 @@ document.querySelector("#app").innerHTML = `
           <span id="room-label"></span>
         </div>
 
-        <div id="status"
-            class="status"></div>
+        <div class="game-bar-actions">
+          <div id="status"
+              class="status"></div>
+
+          <button id="home-button"
+              type="button"
+              class="secondary-button compact-button">
+            Home
+          </button>
+        </div>
       </div>
 
       <div class="elixir-panel">
@@ -158,6 +166,9 @@ const reserveElement =
 
 const statusElement =
   document.getElementById("status");
+
+const homeButton =
+  document.getElementById("home-button");
 
 const roomLabelElement =
   document.getElementById("room-label");
@@ -271,10 +282,20 @@ declineDrawButton.addEventListener(
   () => respondToDraw("decline")
 );
 
+homeButton.addEventListener(
+  "click",
+  goHome
+);
+
 renderApp();
 
 if (appState.roomId) {
   connectRoom();
+}
+
+function goHome() {
+  window.location.href =
+    window.location.pathname;
 }
 
 async function createGame() {
@@ -458,10 +479,10 @@ function renderGame() {
 
 function renderElixir() {
   whiteElixirElement.textContent =
-    `White Elixir: ${appState.elixir?.w ?? 0}`;
+    `White Elixir: ${appState.elixir?.w ?? 0} | Score: ${appState.score?.w ?? 0}`;
 
   blackElixirElement.textContent =
-    `Black Elixir: ${appState.elixir?.b ?? 0}`;
+    `Black Elixir: ${appState.elixir?.b ?? 0} | Score: ${appState.score?.b ?? 0}`;
 
   whiteElixirElement.classList.toggle(
     "mine",

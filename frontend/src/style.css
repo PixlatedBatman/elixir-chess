@@ -211,6 +211,19 @@ button:disabled {
   color: #f4f4f4;
 }
 
+.game-bar-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+.compact-button {
+  min-height: 34px;
+
+  padding: 0 12px;
+}
+
 .game-bar strong {
   margin-right: 12px;
 }
@@ -393,7 +406,8 @@ button:disabled {
     height: min(94vw, 640px);
   }
 
-  .game-bar {
+  .game-bar,
+  .game-bar-actions {
     align-items: flex-start;
     flex-direction: column;
   }
