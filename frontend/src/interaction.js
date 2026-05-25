@@ -41,6 +41,8 @@ const RESERVE_COSTS = {
 
 // let floatingPiece = null;
 
+let activePointerId = null;
+
 // ---------------- INIT ----------------
 
 export function initializeInteractions(
@@ -58,33 +60,42 @@ export function initializeInteractions(
     handleBoardClick
     );
 
-  // mouse down
   boardElement.addEventListener(
-    "mousedown",
+    "pointerdown",
     startDragging
   );
 
   reserveElement.addEventListener(
-    "mousedown",
+    "pointerdown",
     startDragging
   );
 
-  // mouse move
   document.addEventListener(
-    "mousemove",
+    "pointermove",
     moveDraggingPiece
   );
 
-  // mouse up
   document.addEventListener(
-    "mouseup",
+    "pointerup",
     stopDragging
+  );
+
+  document.addEventListener(
+    "pointercancel",
+    cancelDragging
   );
 }
 
 // ---------------- START DRAG ----------------
 
 function startDragging(event) {
+
+  if (
+    activePointerId !== null &&
+    activePointerId !== event.pointerId
+  ) {
+    return;
+  }
 
   const piece =
     event.target.closest(".piece");
@@ -139,8 +150,12 @@ function startDragging(event) {
     return;
   }
 
+  activePointerId =
+    event.pointerId;
+
   appState.draggedPiece = pieceCode;
   appState.draggedFrom = from;
+  appState.selectedSource = from;
 
   // floating piece
   appState.floatingPiece =
@@ -183,6 +198,9 @@ function startReserveDragging(
     rerender();
     return;
   }
+
+  activePointerId =
+    event.pointerId;
 
   appState.draggedPiece =
     pieceCode;
@@ -228,7 +246,16 @@ function startReserveDragging(
 
 function moveDraggingPiece(event) {
 
+  if (
+    activePointerId !== null &&
+    event.pointerId !== activePointerId
+  ) {
+    return;
+  }
+
   if (!appState.floatingPiece) return;
+
+  event.preventDefault();
 
   moveFloatingPiece(
     event.clientX,
@@ -249,7 +276,19 @@ function moveFloatingPiece(x, y) {
 
 async function stopDragging(event) {
 
-  if (!appState.draggedPiece) return;
+  if (
+    activePointerId !== null &&
+    event.pointerId !== activePointerId
+  ) {
+    return;
+  }
+
+  if (!appState.draggedPiece) {
+    activePointerId = null;
+    return;
+  }
+
+  event.preventDefault();
 
   const element =
     document.elementFromPoint(
@@ -262,7 +301,16 @@ async function stopDragging(event) {
 
   // dropped nowhere
   if (!square) {
-    cleanupDrag();
+    if (
+      appState.draggedFrom?.startsWith(
+        "reserve:"
+      )
+    ) {
+      finishTapSelection();
+    } else {
+      cleanupDrag();
+    }
+
     rerender();
     return;
   }
@@ -297,7 +345,7 @@ async function stopDragging(event) {
 
   // same square cancel
   if (target === appState.draggedFrom) {
-    cleanupDrag();
+    finishTapSelection();
     rerender();
     return;
   }
@@ -313,6 +361,29 @@ async function stopDragging(event) {
 }
 
 // ---------------- HELPERS ----------------
+
+function cancelDragging(event) {
+  if (
+    activePointerId !== null &&
+    event.pointerId !== activePointerId
+  ) {
+    return;
+  }
+
+  cleanupDrag();
+  rerender();
+}
+
+function finishTapSelection() {
+  if (appState.floatingPiece) {
+    appState.floatingPiece.remove();
+  }
+
+  appState.floatingPiece = null;
+  appState.draggedPiece = null;
+  appState.draggedFrom = null;
+  activePointerId = null;
+}
 
 function cleanupDrag() {
 
@@ -330,6 +401,8 @@ function cleanupDrag() {
   appState.selectedSquare = null;
 
   appState.legalMoves = [];
+
+  activePointerId = null;
 }
 
 function canAffordReserve(pieceCode) {
