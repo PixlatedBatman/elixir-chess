@@ -249,6 +249,12 @@ function applyServerState(payload) {
       w: 3,
       b: 3,
     };
+  appState.score =
+    payload.score ||
+    {
+      w: 0,
+      b: 0,
+    };
   appState.lastMove =
     payload.lastMove || null;
   appState.boardOrientation =

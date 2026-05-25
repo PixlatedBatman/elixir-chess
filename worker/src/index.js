@@ -8,6 +8,14 @@ import {
 const INITIAL_ELIXIR = 3;
 const MOVE_ELIXIR_GAIN = 1;
 
+const PIECE_VALUES = {
+  p: 1,
+  b: 3,
+  n: 3,
+  r: 5,
+  q: 7,
+};
+
 const RESERVE_COSTS = {
   P: 1,
   B: 3,
@@ -245,6 +253,10 @@ export class GameRoom {
       w: INITIAL_ELIXIR,
       b: INITIAL_ELIXIR,
     };
+    state.score = {
+      w: 0,
+      b: 0,
+    };
 
     await this.saveState(state);
 
@@ -374,6 +386,12 @@ export class GameRoom {
     state.drawOffer = null;
     state.elixir = normalizeElixir(state.elixir);
     state.elixir[role] += MOVE_ELIXIR_GAIN;
+    state.score = normalizeScore(state.score);
+
+    if (move.captured) {
+      state.score[role] +=
+        PIECE_VALUES[move.captured] || 0;
+    }
     updateGameOver(state);
 
     await this.saveState(state);
@@ -751,6 +769,7 @@ export class GameRoom {
         "gameOver",
         "drawOffer",
         "elixir",
+        "score",
       ]);
 
     return {
@@ -777,6 +796,10 @@ export class GameRoom {
         normalizeElixir(
           stored.get("elixir")
         ),
+      score:
+        normalizeScore(
+          stored.get("score")
+        ),
     };
   }
 
@@ -789,6 +812,7 @@ export class GameRoom {
       gameOver: state.gameOver,
       drawOffer: state.drawOffer,
       elixir: normalizeElixir(state.elixir),
+      score: normalizeScore(state.score),
     });
   }
 
@@ -901,6 +925,7 @@ function serializeState(
     drawOffer: state.drawOffer,
     gameOver: state.gameOver,
     elixir: normalizeElixir(state.elixir),
+    score: normalizeScore(state.score),
     lastMove: state.lastMove,
   };
 }
@@ -913,6 +938,17 @@ function normalizeElixir(elixir) {
     b: Number.isFinite(elixir?.b)
       ? elixir.b
       : INITIAL_ELIXIR,
+  };
+}
+
+function normalizeScore(score) {
+  return {
+    w: Number.isFinite(score?.w)
+      ? score.w
+      : 0,
+    b: Number.isFinite(score?.b)
+      ? score.b
+      : 0,
   };
 }
 

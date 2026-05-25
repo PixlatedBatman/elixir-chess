@@ -55,6 +55,19 @@ Future goal:
 
 ---
 
+## Score
+
+- Score is the total material value of pieces captured by each player.
+- Captured piece values:
+  - Pawn: 1
+  - Bishop: 3
+  - Knight: 3
+  - Rook: 5
+  - Queen: 7
+- The backend owns score calculation and broadcasts both players' scores.
+
+---
+
 ## Elixir Economy
 
 - Each player starts with 3 Elixir.

@@ -44,6 +44,10 @@ export const appState = {
     w: 3,
     b: 3,
   },
+  score: {
+    w: 0,
+    b: 0,
+  },
   statusMessage: "",
 
 };
