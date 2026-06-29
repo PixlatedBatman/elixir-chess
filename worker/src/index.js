@@ -77,6 +77,9 @@ export default {
       roomId,
     ] = parts;
 
+    const action =
+      parts[3];
+
     if (
       api === "api" &&
       resource === "rooms" &&
@@ -84,29 +87,37 @@ export default {
       request.method === "POST"
     ) {
       const createdRoomId =
-        createRoomId();
-
-      const id =
-        env.GAME_ROOM.idFromName(
-          createdRoomId
+        await createBackendRoom(
+          env,
+          url,
+          request
         );
-
-      const room =
-        env.GAME_ROOM.get(id);
-
-      await room.fetch(
-        new Request(
-          `${url.origin}/api/rooms/${createdRoomId}/create`,
-          {
-            method: "POST",
-            headers: request.headers,
-          }
-        )
-      );
 
       return json(
         {
           roomId: createdRoomId,
+        },
+        200,
+        request
+      );
+    }
+
+    if (
+      api === "api" &&
+      resource === "matchmake" &&
+      !roomId &&
+      request.method === "POST"
+    ) {
+      const matchedRoomId =
+        await findOrCreateWaitingRoom(
+          env,
+          url,
+          request
+        );
+
+      return json(
+        {
+          roomId: matchedRoomId,
         },
         200,
         request
@@ -135,9 +146,117 @@ export default {
     const room =
       env.GAME_ROOM.get(id);
 
-    return room.fetch(request);
+    const response =
+      await room.fetch(request);
+
+    if (
+      action === "join" &&
+      request.method === "POST" &&
+      response.ok
+    ) {
+      await updateWaitingRoom(
+        env,
+        roomId,
+        response.clone()
+      );
+    }
+
+    return response;
   },
 };
+
+export class Matchmaker {
+  constructor(ctx) {
+    this.ctx = ctx;
+  }
+
+  async fetch(request) {
+    const url =
+      new URL(request.url);
+
+    const action =
+      url.pathname
+        .split("/")
+        .filter(Boolean)[0];
+
+    if (
+      request.method === "GET" &&
+      action === "waiting"
+    ) {
+      return new Response(
+        JSON.stringify({
+          roomId:
+            await this.ctx.storage.get("waitingRoom") ||
+            null,
+        }),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    if (
+      request.method === "POST" &&
+      action === "waiting"
+    ) {
+      const body =
+        await request.json();
+
+      await this.ctx.storage.put(
+        "waitingRoom",
+        body.roomId
+      );
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    if (
+      request.method === "POST" &&
+      action === "clear"
+    ) {
+      const body =
+        await request.json();
+
+      const waitingRoom =
+        await this.ctx.storage.get("waitingRoom");
+
+      if (
+        !body.roomId ||
+        body.roomId === waitingRoom
+      ) {
+        await this.ctx.storage.delete("waitingRoom");
+      }
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ error: "Unknown matchmaker route" }),
+      {
+        status: 404,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  }
+}
 
 export class GameRoom {
   constructor(ctx) {
@@ -162,6 +281,13 @@ export class GameRoom {
 
     const action =
       parts[3];
+
+    if (
+      request.method === "GET" &&
+      action === "status"
+    ) {
+      return this.handleStatus(request);
+    }
 
     if (
       request.method === "GET" &&
@@ -265,6 +391,25 @@ export class GameRoom {
         ok: true,
       },
       200,
+      request
+    );
+  }
+
+  async handleStatus(request) {
+    const state =
+      await this.getState();
+
+    return json(
+      {
+        exists: Boolean(state.created),
+        players: {
+          w: Boolean(state.players.w),
+          b: Boolean(state.players.b),
+          player1: Boolean(state.players.player1),
+          player2: Boolean(state.players.player2),
+        },
+      },
+      state.created ? 200 : 404,
       request
     );
   }
@@ -835,6 +980,233 @@ export class GameRoom {
       }
     }
   }
+}
+
+async function createBackendRoom(
+  env,
+  url,
+  request
+) {
+  const createdRoomId =
+    createRoomId();
+
+  const id =
+    env.GAME_ROOM.idFromName(
+      createdRoomId
+    );
+
+  const room =
+    env.GAME_ROOM.get(id);
+
+  await room.fetch(
+    new Request(
+      `${url.origin}/api/rooms/${createdRoomId}/create`,
+      {
+        method: "POST",
+        headers: request.headers,
+      }
+    )
+  );
+
+  return createdRoomId;
+}
+
+async function findOrCreateWaitingRoom(
+  env,
+  url,
+  request
+) {
+  const matchmaker =
+    getMatchmaker(env);
+
+  const waitingResponse =
+    await matchmaker.fetch(
+      new Request(
+        `${url.origin}/waiting`
+      )
+    );
+
+  const waiting =
+    await waitingResponse.json();
+
+  if (waiting.roomId) {
+    const status =
+      await getRoomStatus(
+        env,
+        url,
+        waiting.roomId,
+        request
+      );
+
+    if (
+      status.exists &&
+      status.players.player1 &&
+      !status.players.player2
+    ) {
+      return waiting.roomId;
+    }
+
+    await clearWaitingRoom(
+      env,
+      url,
+      waiting.roomId
+    );
+  }
+
+  const createdRoomId =
+    await createBackendRoom(
+      env,
+      url,
+      request
+    );
+
+  await setWaitingRoom(
+    env,
+    url,
+    createdRoomId
+  );
+
+  return createdRoomId;
+}
+
+async function getRoomStatus(
+  env,
+  url,
+  roomId,
+  request
+) {
+  const id =
+    env.GAME_ROOM.idFromName(roomId);
+
+  const room =
+    env.GAME_ROOM.get(id);
+
+  const response =
+    await room.fetch(
+      new Request(
+        `${url.origin}/api/rooms/${roomId}/status`,
+        {
+          headers: request.headers,
+        }
+      )
+    );
+
+  if (!response.ok) {
+    return {
+      exists: false,
+    };
+  }
+
+  return response.json();
+}
+
+async function updateWaitingRoom(
+  env,
+  roomId,
+  response
+) {
+  const payload =
+    await response.json();
+
+  if (
+    payload.players?.player1 &&
+    !payload.players?.player2
+  ) {
+    await setWaitingRoomFromRoomId(
+      env,
+      roomId
+    );
+
+    return;
+  }
+
+  if (payload.players?.player2) {
+    await clearWaitingRoomFromRoomId(
+      env,
+      roomId
+    );
+  }
+}
+
+function getMatchmaker(env) {
+  const id =
+    env.MATCHMAKER.idFromName("global");
+
+  return env.MATCHMAKER.get(id);
+}
+
+async function setWaitingRoom(
+  env,
+  url,
+  roomId
+) {
+  const matchmaker =
+    getMatchmaker(env);
+
+  await matchmaker.fetch(
+    new Request(
+      `${url.origin}/waiting`,
+      {
+        method: "POST",
+        body: JSON.stringify({ roomId }),
+      }
+    )
+  );
+}
+
+async function clearWaitingRoom(
+  env,
+  url,
+  roomId
+) {
+  const matchmaker =
+    getMatchmaker(env);
+
+  await matchmaker.fetch(
+    new Request(
+      `${url.origin}/clear`,
+      {
+        method: "POST",
+        body: JSON.stringify({ roomId }),
+      }
+    )
+  );
+}
+
+async function setWaitingRoomFromRoomId(
+  env,
+  roomId
+) {
+  const matchmaker =
+    getMatchmaker(env);
+
+  await matchmaker.fetch(
+    new Request(
+      "https://internal/waiting",
+      {
+        method: "POST",
+        body: JSON.stringify({ roomId }),
+      }
+    )
+  );
+}
+
+async function clearWaitingRoomFromRoomId(
+  env,
+  roomId
+) {
+  const matchmaker =
+    getMatchmaker(env);
+
+  await matchmaker.fetch(
+    new Request(
+      "https://internal/clear",
+      {
+        method: "POST",
+        body: JSON.stringify({ roomId }),
+      }
+    )
+  );
 }
 
 function assignRole(

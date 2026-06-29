@@ -57,6 +57,89 @@ body {
   gap: 12px;
 }
 
+.home-actions {
+  flex-wrap: wrap;
+}
+
+.home-actions button {
+  flex: 1 1 150px;
+}
+
+.room-entry {
+  display: grid;
+
+  gap: 8px;
+}
+
+.room-entry label {
+  color: #cfcfcf;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.room-entry-row {
+  display: flex;
+
+  gap: 10px;
+}
+
+.room-entry input {
+  min-width: 0;
+  flex: 1;
+
+  padding: 0 12px;
+
+  color: #f4f4f4;
+  background: #202020;
+
+  border: 1px solid #555;
+  border-radius: 6px;
+
+  font: inherit;
+}
+
+.form-message {
+  min-height: 18px;
+  margin: 0;
+
+  color: #f08f8f;
+  font-size: 14px;
+}
+
+.info-panel {
+  display: grid;
+
+  gap: 10px;
+
+  padding: 16px;
+
+  color: #e8e8e8;
+  background: #202020;
+
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+}
+
+.info-panel h2,
+.info-panel p {
+  margin: 0;
+}
+
+.info-panel h2 {
+  color: #f0d9b5;
+  font-size: 20px;
+}
+
+.info-panel p {
+  color: #d5d5d5;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.info-panel a {
+  color: #f0d9b5;
+}
+
 button {
   min-height: 42px;
 
@@ -417,6 +500,7 @@ button:disabled {
   }
 
   .actions,
+  .room-entry-row,
   .elixir-panel,
   .game-actions,
   .draw-offer {
