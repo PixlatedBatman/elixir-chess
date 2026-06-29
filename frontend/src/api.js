@@ -40,6 +40,39 @@ export async function createRoom() {
   return response.json();
 }
 
+export async function findOrCreateMatch() {
+  const response =
+    await fetch(
+      `${API_BASE_URL}/api/matchmake`,
+      {
+        method: "POST",
+      }
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      "Could not find a game"
+    );
+  }
+
+  return response.json();
+}
+
+export async function getRoomStatus(roomId) {
+  const response =
+    await fetch(
+      `${API_BASE_URL}/api/rooms/${encodeURIComponent(roomId)}/status`
+    );
+
+  if (!response.ok) {
+    return {
+      exists: false,
+    };
+  }
+
+  return response.json();
+}
+
 export function getPlayerId() {
   const storageKey =
     "elixir-chess-player-id";
