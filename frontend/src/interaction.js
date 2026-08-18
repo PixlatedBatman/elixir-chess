@@ -26,6 +26,10 @@ import {
   submitReserve,
 } from "./api";
 
+import {
+  playMoveSound,
+} from "./sound";
+
 const RESERVE_COSTS = {
   P: 1,
   B: 3,
@@ -473,6 +477,10 @@ async function commitMove(from, to) {
         to,
       ],
     };
+
+    playMoveSound(
+      Boolean(move.captured)
+    );
   }
 
   return Boolean(move);
@@ -503,6 +511,8 @@ async function commitReserve(
         target,
       ],
     };
+
+    playMoveSound();
   }
 
   return placed;

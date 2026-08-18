@@ -6,6 +6,11 @@ import {
   setFen,
 } from "./game";
 
+import {
+  playGameOverSound,
+  playMoveSound,
+} from "./sound";
+
 const DEFAULT_API_BASE_URL =
   "https://api.elixirchess.karthikkashyap.com";
 
@@ -266,6 +271,17 @@ export async function submitDraw(
 }
 
 function applyServerState(payload) {
+  const previousState = {
+    gameOver:
+      appState.gameOver,
+    lastMove:
+      appState.lastMove,
+    score:
+      appState.score,
+    hasReceivedServerState:
+      appState.hasReceivedServerState,
+  };
+
   appState.online = true;
   appState.fen = payload.fen;
   appState.playerColor =
@@ -303,6 +319,115 @@ function applyServerState(payload) {
 
   appState.statusMessage =
     getStatusMessage(payload);
+
+  playSoundsForServerState(
+    previousState,
+    payload
+  );
+
+  appState.hasReceivedServerState = true;
+}
+
+function playSoundsForServerState(
+  previousState,
+  payload
+) {
+  if (
+    !previousState.hasReceivedServerState
+  ) {
+    appState.lastSoundKey =
+      getGameOverSoundKey(
+        payload.gameOver
+      ) ||
+      getMoveSoundKey(
+        payload.lastMove,
+        payload.score
+      );
+
+    return;
+  }
+
+  const gameOverSoundKey =
+    getGameOverSoundKey(
+      payload.gameOver
+    );
+
+  if (
+    gameOverSoundKey &&
+    gameOverSoundKey !== appState.lastSoundKey
+  ) {
+    appState.lastSoundKey =
+      gameOverSoundKey;
+
+    playGameOverSound(
+      payload.gameOver,
+      payload.role
+    );
+
+    return;
+  }
+
+  const moveSoundKey =
+    getMoveSoundKey(
+      payload.lastMove,
+      payload.score
+    );
+
+  if (
+    moveSoundKey &&
+    moveSoundKey !== appState.lastSoundKey
+  ) {
+    appState.lastSoundKey =
+      moveSoundKey;
+
+    playMoveSound(
+      didScoreIncrease(
+        previousState.score,
+        payload.score
+      )
+    );
+  }
+}
+
+function getGameOverSoundKey(gameOver) {
+  if (!gameOver) {
+    return null;
+  }
+
+  return [
+    "game-over",
+    gameOver.reason,
+    gameOver.winner || "draw",
+  ].join(":");
+}
+
+function getMoveSoundKey(
+  lastMove,
+  score
+) {
+  if (!lastMove) {
+    return null;
+  }
+
+  return [
+    "move",
+    lastMove.type,
+    ...(lastMove.squares || []),
+    score?.w ?? 0,
+    score?.b ?? 0,
+  ].join(":");
+}
+
+function didScoreIncrease(
+  previousScore,
+  nextScore
+) {
+  return (
+    (nextScore?.w ?? 0) >
+      (previousScore?.w ?? 0) ||
+    (nextScore?.b ?? 0) >
+      (previousScore?.b ?? 0)
+  );
 }
 
 function getReserveColor(payload) {

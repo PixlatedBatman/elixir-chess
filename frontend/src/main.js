@@ -28,6 +28,10 @@ import {
   initializeInteractions,
 } from "./interaction";
 
+import {
+  initializeSound,
+} from "./sound";
+
 document.querySelector("#app").innerHTML = `
   <div class="page">
 
@@ -353,6 +357,8 @@ initializeInteractions(
   boardElement,
   reserveElement
 );
+
+initializeSound();
 
 document
   .getElementById("create-game")
