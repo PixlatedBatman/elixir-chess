@@ -205,8 +205,29 @@ document.querySelector("#app").innerHTML = `
             class="elixir-balance"></div>
       </div>
 
-      <div id="board"
-          class="board"></div>
+      <div class="play-area">
+        <div class="board-wrap">
+          <div id="board"
+              class="board"></div>
+        </div>
+
+        <aside class="side-panel">
+          <div class="clock-panel">
+            <div id="black-clock"
+                class="clock"></div>
+
+            <div id="white-clock"
+                class="clock"></div>
+          </div>
+
+          <div class="history-panel">
+            <h2>Moves</h2>
+
+            <div id="move-history"
+                class="move-history"></div>
+          </div>
+        </aside>
+      </div>
 
       <div class="game-actions">
         <button id="offer-draw"
@@ -223,19 +244,26 @@ document.querySelector("#app").innerHTML = `
       </div>
 
       <div id="draw-offer"
-          class="draw-offer hidden">
-        <span id="draw-offer-text"></span>
+          class="modal-backdrop hidden">
+        <div class="draw-offer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="draw-offer-text">
+          <span id="draw-offer-text"></span>
 
-        <button id="accept-draw"
-            type="button">
-          Accept Draw
-        </button>
+          <div class="modal-actions">
+            <button id="accept-draw"
+                type="button">
+              Accept Draw
+            </button>
 
-        <button id="decline-draw"
-            type="button"
-            class="secondary-button">
-          Decline
-        </button>
+            <button id="decline-draw"
+                type="button"
+                class="secondary-button">
+              Decline
+            </button>
+          </div>
+        </div>
       </div>
 
       <div id="reserve"
@@ -295,6 +323,15 @@ const whiteElixirElement =
 
 const blackElixirElement =
   document.getElementById("black-elixir");
+
+const whiteClockElement =
+  document.getElementById("white-clock");
+
+const blackClockElement =
+  document.getElementById("black-clock");
+
+const moveHistoryElement =
+  document.getElementById("move-history");
 
 const offerDrawButton =
   document.getElementById("offer-draw");
@@ -440,6 +477,11 @@ homeButton.addEventListener(
 );
 
 renderApp();
+
+window.setInterval(
+  renderClocks,
+  1000
+);
 
 if (appState.roomId) {
   connectRoom();
@@ -722,6 +764,8 @@ function renderGame() {
     `Room ${appState.roomId}`;
 
   renderDrawControls();
+  renderClocks();
+  renderMoveHistory();
   renderGameOver();
 }
 
@@ -780,6 +824,127 @@ function renderDrawControls() {
   }
 }
 
+function renderClocks() {
+  if (
+    !whiteClockElement ||
+    !blackClockElement
+  ) {
+    return;
+  }
+
+  const clocks =
+    getDisplayClocks();
+
+  whiteClockElement.textContent =
+    `White ${formatClock(clocks.w)}`;
+
+  blackClockElement.textContent =
+    `Black ${formatClock(clocks.b)}`;
+
+  whiteClockElement.classList.toggle(
+    "active",
+    appState.clockTurn === "w" &&
+    !appState.gameOver
+  );
+
+  blackClockElement.classList.toggle(
+    "active",
+    appState.clockTurn === "b" &&
+    !appState.gameOver
+  );
+}
+
+function getDisplayClocks() {
+  const clocks = {
+    w: appState.clocks?.w ?? 15 * 60 * 1000,
+    b: appState.clocks?.b ?? 15 * 60 * 1000,
+  };
+
+  if (
+    appState.gameOver ||
+    !appState.clockUpdatedAt ||
+    (
+      appState.clockTurn !== "w" &&
+      appState.clockTurn !== "b"
+    )
+  ) {
+    return clocks;
+  }
+
+  const elapsed =
+    Date.now() -
+    appState.clockUpdatedAt;
+
+  return {
+    ...clocks,
+    [appState.clockTurn]:
+      Math.max(
+        0,
+        clocks[appState.clockTurn] - elapsed
+      ),
+  };
+}
+
+function formatClock(milliseconds) {
+  const totalSeconds =
+    Math.max(
+      0,
+      Math.ceil(milliseconds / 1000)
+    );
+
+  const minutes =
+    Math.floor(totalSeconds / 60);
+
+  const seconds =
+    totalSeconds % 60;
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function renderMoveHistory() {
+  if (!moveHistoryElement) {
+    return;
+  }
+
+  const moves =
+    appState.moveHistory || [];
+
+  if (moves.length === 0) {
+    moveHistoryElement.innerHTML =
+      `<div class="history-empty">No moves yet</div>`;
+    return;
+  }
+
+  const rows =
+    new Map();
+
+  for (const move of moves) {
+    if (!rows.has(move.turnNumber)) {
+      rows.set(
+        move.turnNumber,
+        {
+          w: "",
+          b: "",
+        }
+      );
+    }
+
+    rows.get(move.turnNumber)[move.color] =
+      move.notation;
+  }
+
+  moveHistoryElement.innerHTML =
+    Array.from(rows.entries())
+      .map(([turnNumber, row]) => `
+        <div class="history-row">
+          <span class="history-turn">${turnNumber}.</span>
+          <span>${row.w || ""}</span>
+          <span>${row.b || ""}</span>
+        </div>
+      `)
+      .join("");
+}
+
 function renderGameOver() {
   gameOverElement.classList.toggle(
     "hidden",
@@ -808,6 +973,10 @@ function getGameOverText(gameOver) {
 
   if (gameOver.reason === "resignation") {
     return `${winner} won by resignation.`;
+  }
+
+  if (gameOver.reason === "timeout") {
+    return `${winner} won on time.`;
   }
 
   return `${winner} won by checkmate.`;
