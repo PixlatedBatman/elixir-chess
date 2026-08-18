@@ -130,7 +130,7 @@ document.querySelector("#app").innerHTML = `
 
       <div class="rules-section">
         <h2>Reserve Costs</h2>
-        <p>Pawn costs 1 Elixir. Bishop costs 3 Elixir. Knight costs 3 Elixir. Rook costs 5 Elixir. Queen costs 7 Elixir.</p>
+        <p>Pawn costs 1 Elixir. Bishop costs 3 Elixir. Knight costs 3 Elixir. Rook costs 5 Elixir. Queen costs 9 Elixir.</p>
       </div>
 
       <div class="rules-section">
@@ -141,7 +141,7 @@ document.querySelector("#app").innerHTML = `
 
       <div class="rules-section">
         <h2>Captures and Score</h2>
-        <p>Captures follow normal chess rules. When you capture a piece, your score increases by that piece's value: Pawn 1, Bishop 3, Knight 3, Rook 5, and Queen 7.</p>
+        <p>Captures follow normal chess rules. When you capture a piece, your score increases by that piece's value: Pawn 1, Bishop 3, Knight 3, Rook 5, and Queen 9.</p>
       </div>
 
       <div class="rules-section">

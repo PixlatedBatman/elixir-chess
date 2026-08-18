@@ -63,7 +63,7 @@ Future goal:
   - Bishop: 3
   - Knight: 3
   - Rook: 5
-  - Queen: 7
+  - Queen: 9
 - The backend owns score calculation and broadcasts both players' scores.
 
 ---
@@ -78,7 +78,7 @@ Future goal:
   - Bishop: 3
   - Knight: 3
   - Rook: 5
-  - Queen: 7
+  - Queen: 9
 - Both players can see both Elixir balances.
 - The backend owns all Elixir balances and validates reserve purchases.
 

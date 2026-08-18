@@ -8,7 +8,7 @@ const RESERVE_COSTS = {
   B: 3,
   N: 3,
   R: 5,
-  Q: 7,
+  Q: 9,
 };
 
 export function createBoard(

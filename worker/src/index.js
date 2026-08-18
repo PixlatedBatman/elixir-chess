@@ -13,7 +13,7 @@ const PIECE_VALUES = {
   b: 3,
   n: 3,
   r: 5,
-  q: 7,
+  q: 9,
 };
 
 const RESERVE_COSTS = {
@@ -21,7 +21,7 @@ const RESERVE_COSTS = {
   B: 3,
   N: 3,
   R: 5,
-  Q: 7,
+  Q: 9,
 };
 
 const allowedOrigins = new Set([
