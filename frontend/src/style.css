@@ -59,6 +59,10 @@ body {
   gap: 16px;
 }
 
+.rules-header .byline {
+  margin-top: 8px;
+}
+
 .rules-section {
   display: grid;
 
