@@ -28,6 +28,10 @@ import {
   initializeInteractions,
 } from "./interaction";
 
+import {
+  initializeSound,
+} from "./sound";
+
 document.querySelector("#app").innerHTML = `
   <div class="page">
 
@@ -85,19 +89,64 @@ document.querySelector("#app").innerHTML = `
             class="form-message"></p>
       </form>
 
-      <div id="rules-panel"
-          class="info-panel hidden">
-        <h2>Rules</h2>
-        <p>Elixir Chess follows normal chess movement, check, checkmate, and turn order, with one added choice each turn: move a piece or spend Elixir to place a reserve piece.</p>
-        <p>Both players start with 3 Elixir. A normal move gives that player 1 Elixir. Reserve placements count as a move, but do not give Elixir.</p>
-        <p>Reserve costs are Pawn 1, Bishop 3, Knight 3, Rook 5, and Queen 7. Reserve pieces can be placed only on legal empty reserve squares for your color.</p>
-        <p>Captures increase the capturing player's score by the captured piece value. Players may resign or offer a draw; a draw only ends the game if the opponent accepts.</p>
-      </div>
-
       <div id="contact-panel"
           class="info-panel hidden">
         <h2>Contact</h2>
         <p>This game is vibe coded and can hence have a lot of bugs. If you find any or if you would like to give any suggestions or updates, feel free to mail me at <a href="mailto:contact@karthikkashyap.com">contact@karthikkashyap.com</a>.</p>
+      </div>
+    </section>
+
+    <section id="rules-view"
+        class="screen-panel rules-page hidden">
+      <div class="rules-header">
+        <div>
+          <h1>Rules</h1>
+          <p class="byline">Elixir Chess rulebook</p>
+        </div>
+
+        <button id="rules-home-button"
+            type="button"
+            class="secondary-button compact-button">
+          Home
+        </button>
+      </div>
+
+      <div class="rules-section">
+        <h2>Standard Chess</h2>
+        <p>Elixir Chess uses normal chess rules for piece movement, turns, check, checkmate, castling, en passant, and promotion. If you make a pawn promotion, it promotes to a queen.</p>
+      </div>
+
+      <div class="rules-section">
+        <h2>Elixir</h2>
+        <p>Both players start with 3 Elixir. On your turn, you choose one action: make a normal chess move, or spend Elixir to place one reserve piece.</p>
+        <p>A normal move gives you 1 Elixir after the move is made. Placing a reserve piece costs Elixir and uses your turn, but it does not give you Elixir back.</p>
+      </div>
+
+      <div class="rules-section">
+        <h2>Reserve Pieces</h2>
+        <p>Reserve Pieces are extra pieces that you can summon onto the board instead of moving a piece that is already in play. They give you a way to rebuild attacks, defend your king, or create new threats when you have saved enough Elixir.</p>
+        <p>Each player has access to reserve Queens, Rooks, Bishops, Knights, and Pawns of their own color. You can only place your own color's reserve pieces, and only when it is your turn.</p>
+      </div>
+
+      <div class="rules-section">
+        <h2>Reserve Costs</h2>
+        <p>Pawn costs 1 Elixir. Bishop costs 3 Elixir. Knight costs 3 Elixir. Rook costs 5 Elixir. Queen costs 7 Elixir.</p>
+      </div>
+
+      <div class="rules-section">
+        <h2>Reserve Placement</h2>
+        <p>White reserve pieces may be placed only on empty squares in ranks 1 and 2. Black reserve pieces may be placed only on empty squares in ranks 7 and 8.</p>
+        <p>A reserve placement is legal only if the target square is empty, inside your reserve zone, and the placement does not leave your own king in check.</p>
+      </div>
+
+      <div class="rules-section">
+        <h2>Captures and Score</h2>
+        <p>Captures follow normal chess rules. When you capture a piece, your score increases by that piece's value: Pawn 1, Bishop 3, Knight 3, Rook 5, and Queen 7.</p>
+      </div>
+
+      <div class="rules-section">
+        <h2>Draws and Resignation</h2>
+        <p>A player may resign to end the game immediately. A player may also offer a draw; the game ends as a draw only if the opponent accepts it.</p>
       </div>
     </section>
 
@@ -208,6 +257,9 @@ const homeView =
 const lobbyView =
   document.getElementById("lobby-view");
 
+const rulesView =
+  document.getElementById("rules-view");
+
 const gameView =
   document.getElementById("game-view");
 
@@ -277,9 +329,6 @@ const existingRoomInput =
 const existingRoomMessage =
   document.getElementById("existing-room-message");
 
-const rulesPanel =
-  document.getElementById("rules-panel");
-
 const contactPanel =
   document.getElementById("contact-panel");
 
@@ -309,6 +358,8 @@ initializeInteractions(
   reserveElement
 );
 
+initializeSound();
+
 document
   .getElementById("create-game")
   .addEventListener(
@@ -334,7 +385,7 @@ document
   .getElementById("rules-button")
   .addEventListener(
     "click",
-    () => toggleHomePanel(rulesPanel)
+    goToRules
   );
 
 document
@@ -351,6 +402,13 @@ existingRoomForm.addEventListener(
 
 document
   .getElementById("lobby-home-button")
+  .addEventListener(
+    "click",
+    goHome
+  );
+
+document
+  .getElementById("rules-home-button")
   .addEventListener(
     "click",
     goHome
@@ -390,6 +448,11 @@ if (appState.roomId) {
 function goHome() {
   window.location.href =
     window.location.pathname;
+}
+
+function goToRules() {
+  window.location.href =
+    `${window.location.pathname}?rules=1`;
 }
 
 async function createGame() {
@@ -451,10 +514,6 @@ function showExistingRoomForm() {
     "hidden"
   );
 
-  rulesPanel.classList.add(
-    "hidden"
-  );
-
   contactPanel.classList.add(
     "hidden"
   );
@@ -471,10 +530,6 @@ function toggleHomePanel(panel) {
     panel.classList.contains("hidden");
 
   existingRoomForm.classList.add(
-    "hidden"
-  );
-
-  rulesPanel.classList.add(
     "hidden"
   );
 
@@ -563,6 +618,11 @@ function connectRoom() {
 }
 
 function renderApp() {
+  const showingRules =
+    new URLSearchParams(
+      window.location.search
+    ).has("rules");
+
   const hasRoom =
     Boolean(appState.roomId);
 
@@ -574,20 +634,25 @@ function renderApp() {
 
   homeView.classList.toggle(
     "hidden",
-    hasRoom
+    showingRules || hasRoom
+  );
+
+  rulesView.classList.toggle(
+    "hidden",
+    !showingRules
   );
 
   lobbyView.classList.toggle(
     "hidden",
-    !hasRoom || gameReady
+    showingRules || !hasRoom || gameReady
   );
 
   gameView.classList.toggle(
     "hidden",
-    !hasRoom || !gameReady
+    showingRules || !hasRoom || !gameReady
   );
 
-  if (!hasRoom) {
+  if (showingRules || !hasRoom) {
     return;
   }
 

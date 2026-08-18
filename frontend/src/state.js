@@ -50,4 +50,7 @@ export const appState = {
   },
   statusMessage: "",
 
+  hasReceivedServerState: false,
+  lastSoundKey: null,
+
 };

@@ -44,6 +44,46 @@ body {
   line-height: 1.1;
 }
 
+.rules-page {
+  width: min(92vw, 720px);
+
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
+.rules-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 16px;
+}
+
+.rules-header .byline {
+  margin-top: 8px;
+}
+
+.rules-section {
+  display: grid;
+
+  gap: 8px;
+}
+
+.rules-section h2,
+.rules-section p {
+  margin: 0;
+}
+
+.rules-section h2 {
+  color: #f0d9b5;
+  font-size: 20px;
+}
+
+.rules-section p {
+  color: #d5d5d5;
+  line-height: 1.5;
+}
+
 .byline {
   margin: -12px 0 0;
 
@@ -359,6 +399,7 @@ button:disabled {
   cursor: grab;
 
   user-select: none;
+  -webkit-touch-callout: none;
   -webkit-user-drag: none;
   touch-action: none;
 }
@@ -490,7 +531,8 @@ button:disabled {
   }
 
   .game-bar,
-  .game-bar-actions {
+  .game-bar-actions,
+  .rules-header {
     align-items: flex-start;
     flex-direction: column;
   }
