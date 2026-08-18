@@ -55,10 +55,20 @@ export function initializeInteractions(
     handleBoardClick
     );
 
-    reserveElement.addEventListener(
+  reserveElement.addEventListener(
     "click",
     handleBoardClick
     );
+
+  boardElement.addEventListener(
+    "contextmenu",
+    preventPieceContextMenu
+  );
+
+  reserveElement.addEventListener(
+    "contextmenu",
+    preventPieceContextMenu
+  );
 
   boardElement.addEventListener(
     "pointerdown",
@@ -84,6 +94,14 @@ export function initializeInteractions(
     "pointercancel",
     cancelDragging
   );
+}
+
+function preventPieceContextMenu(event) {
+  if (
+    event.target.closest(".piece")
+  ) {
+    event.preventDefault();
+  }
 }
 
 // ---------------- START DRAG ----------------
@@ -613,7 +631,31 @@ async function handleBoardClick(event) {
       piece.color +
       piece.type.toUpperCase();
 
-    // wrong turn
+    if (
+      appState.selectedSource &&
+      appState.legalMoves.includes(
+        coordinate
+      ) &&
+      appState.selectedSource !== coordinate
+    ) {
+      await commitMove(
+        appState.selectedSource,
+        coordinate
+      );
+
+      appState.selectedSource =
+        null;
+
+      appState.selectedSquare =
+        null;
+
+      appState.legalMoves = [];
+
+      rerender();
+
+      return;
+    }
+
     if (!canControlColor(piece.color)) {
       return;
     }

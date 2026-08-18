@@ -131,6 +131,7 @@ export function createBoard(
           `${PIECE_THEME}${code}.png`;
 
         img.classList.add("piece");
+        img.draggable = false;
 
         img.dataset.piece =
           code;
