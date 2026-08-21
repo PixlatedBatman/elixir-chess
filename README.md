@@ -174,3 +174,11 @@ Deploy the Worker:
 ```bash
 npm run worker:deploy
 ```
+
+- Future economy system planned
+
+## License
+
+The source code of Elixir Chess is licensed under the MIT License.
+
+Elixir Chess, its name, branding, and associated artwork are not necessarily licensed under the MIT License.
