@@ -88,7 +88,7 @@ document.querySelector("#app").innerHTML = `
       <div id="contact-panel"
           class="info-panel hidden">
         <h2>Contact</h2>
-        <p>This game is vibe coded and can hence have a lot of bugs. If you find any or if you would like to give any suggestions or updates, feel free to mail me at <a href="mailto:contact@karthikkashyap.com">contact@karthikkashyap.com</a>.</p>
+        <p>This game is vibe coded and can hence have a lot of bugs. If you find any or if you would like to give any suggestions, feel free to mail me at <a href="mailto:contact@karthikkashyap.com">contact@karthikkashyap.com</a>.</p>
       </div>
     </section>
 
