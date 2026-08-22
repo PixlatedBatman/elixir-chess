@@ -8,15 +8,15 @@ body {
 .page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 24px 12px;
+  padding: 40px 12px 24px;
 
   display: flex;
   flex-direction: column;
 
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
 
-  gap: 24px;
+  gap: 14px;
 }
 
 .hidden {
@@ -469,6 +469,35 @@ button:disabled {
   border-radius: 8px;
 }
 
+.resign-dialog {
+  width: min(92vw, 360px);
+
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  text-align: center;
+
+  color: #f4f4f4;
+  background: #2a2a2a;
+
+  border: 1px solid #555;
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+}
+
+.resign-dialog h2 {
+  margin: 0;
+  color: #f0d9b5;
+  font-size: 22px;
+}
+
+.resign-dialog p {
+  margin: 0;
+  color: #cfcfcf;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .modal-actions {
   display: flex;
 
@@ -904,14 +933,19 @@ button:disabled {
 }
 
 @media (max-width: 600px) {
+  .page {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
   .game-view {
-    width: min(94vw, 560px);
-    gap: 10px;
+    width: min(96vw, 560px);
+    gap: 8px;
   }
 
   .game-bar {
     align-items: flex-start;
-    gap: 8px;
+    gap: 6px;
   }
 
   .game-bar-actions {

@@ -173,13 +173,24 @@ document.querySelector("#app").innerHTML = `
 
       <div class="changelog-entry">
         <div class="changelog-entry-header">
+          <h2>Update v1.7</h2>
+          <span class="changelog-date">August 22, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Resignation Confirmation Popup:</strong> Replaced native browser confirmation dialog with an in-game modal popup featuring custom Resign and Cancel actions.</li>
+          <li><strong>Mobile Viewport Fit:</strong> Optimized mobile vertical spacing and scaling so the board, HUDs, action buttons, and move history ribbon fit seamlessly without cutting off.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
           <h2>Update v1.6</h2>
           <span class="changelog-date">August 22, 2026</span>
         </div>
         <ul class="changelog-list">
           <li><strong>UI Symmetry & Player HUDs:</strong> Symmetrical player HUD cards combining 15-minute blitz clocks, Elixir counters, and capture scores above a centered board.</li>
           <li><strong>Horizontal Move History:</strong> Horizontal scrolling move ribbon with custom chevron scroll buttons and hidden scrollbar.</li>
-          <li><strong>Interactive Modals:</strong> Modal popup dialogs for Draw offers and Game Over (displaying winner, reason, and a continue button to review the board).</li>
+          <li><strong>Game Over & Draw Popups:</strong> Modal popup dialogs for Draw offers and Game Over (displaying winner, reason, and a continue button to review the board).</li>
           <li><strong>Home Screen & Changelog:</strong> Highlighted all home action buttons with gold theme and added a dedicated Changelog page accessible from the bottom of the screen.</li>
           <li><strong>Balance, Contact & License:</strong> Queen piece value updated to 9, board rank/file coordinates added, dedicated contact email at <code>elixirchess@karthikkashyap.com</code>, and added MIT license documentation.</li>
         </ul>
@@ -364,6 +375,31 @@ document.querySelector("#app").innerHTML = `
         </div>
       </div>
 
+      <div id="resign-confirm-modal"
+          class="modal-backdrop hidden">
+        <div class="resign-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="resign-dialog-title">
+          <h2 id="resign-dialog-title">Resign Game?</h2>
+          <p>Are you sure you want to resign? This will end the game and count as a loss.</p>
+
+          <div class="modal-actions">
+            <button id="confirm-resign"
+                type="button"
+                class="danger-button">
+              Resign
+            </button>
+
+            <button id="cancel-resign"
+                type="button"
+                class="secondary-button">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div id="reserve"
           class="reserve"></div>
 
@@ -507,6 +543,15 @@ const acceptDrawButton =
 const declineDrawButton =
   document.getElementById("decline-draw");
 
+const resignConfirmModalElement =
+  document.getElementById("resign-confirm-modal");
+
+const confirmResignButton =
+  document.getElementById("confirm-resign");
+
+const cancelResignButton =
+  document.getElementById("cancel-resign");
+
 const gameOverElement =
   document.getElementById("game-over");
 
@@ -637,7 +682,25 @@ offerDrawButton.addEventListener(
 
 resignButton.addEventListener(
   "click",
-  resignGame
+  () => {
+    resignConfirmModalElement.classList.remove("hidden");
+  }
+);
+
+confirmResignButton.addEventListener(
+  "click",
+  async () => {
+    resignConfirmModalElement.classList.add("hidden");
+    await submitResign();
+    renderApp();
+  }
+);
+
+cancelResignButton.addEventListener(
+  "click",
+  () => {
+    resignConfirmModalElement.classList.add("hidden");
+  }
 );
 
 acceptDrawButton.addEventListener(
@@ -726,20 +789,6 @@ async function createGame() {
 
 async function offerDraw() {
   await submitDraw();
-  renderApp();
-}
-
-async function resignGame() {
-  const confirmed =
-    window.confirm(
-      "Resign this game?"
-    );
-
-  if (!confirmed) {
-    return;
-  }
-
-  await submitResign();
   renderApp();
 }
 
