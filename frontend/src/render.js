@@ -8,7 +8,7 @@ const RESERVE_COSTS = {
   B: 3,
   N: 3,
   R: 5,
-  Q: 7,
+  Q: 9,
 };
 
 export function createBoard(
@@ -47,9 +47,9 @@ export function createBoard(
       ? [7, 6, 5, 4, 3, 2, 1, 0]
       : [0, 1, 2, 3, 4, 5, 6, 7];
 
-  for (const row of rowIndexes) {
+  for (const [rowPosition, row] of rowIndexes.entries()) {
 
-    for (const col of colIndexes) {
+    for (const [colPosition, col] of colIndexes.entries()) {
 
       const square =
         document.createElement("div");
@@ -73,6 +73,36 @@ export function createBoard(
 
       square.dataset.square =
         coordinate;
+
+      if (colPosition === 0) {
+        const rankLabel =
+          document.createElement("span");
+
+        rankLabel.classList.add(
+          "board-coordinate",
+          "rank-coordinate"
+        );
+
+        rankLabel.textContent =
+          String(8 - rowPosition);
+
+        square.appendChild(rankLabel);
+      }
+
+      if (rowPosition === 7) {
+        const fileLabel =
+          document.createElement("span");
+
+        fileLabel.classList.add(
+          "board-coordinate",
+          "file-coordinate"
+        );
+
+        fileLabel.textContent =
+          "abcdefgh"[colPosition];
+
+        square.appendChild(fileLabel);
+      }
 
       // selected square
       if (

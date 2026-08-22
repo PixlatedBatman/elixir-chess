@@ -304,6 +304,15 @@ function applyServerState(payload) {
       w: 0,
       b: 0,
     };
+  appState.moveHistory =
+    payload.moveHistory || [];
+  appState.clocks =
+    payload.clocks ||
+    appState.clocks;
+  appState.clockUpdatedAt =
+    payload.clockUpdatedAt || null;
+  appState.clockTurn =
+    payload.turn || "w";
   appState.lastMove =
     payload.lastMove || null;
   appState.boardOrientation =
@@ -547,6 +556,10 @@ function getGameOverMessage(gameOver) {
 
   if (gameOver.reason === "resignation") {
     return `Game over. ${winner} won by resignation.`;
+  }
+
+  if (gameOver.reason === "timeout") {
+    return `Game over. ${winner} won on time.`;
   }
 
   return `Game over. ${winner} won by checkmate.`;

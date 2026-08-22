@@ -7,13 +7,14 @@ import {
 
 const INITIAL_ELIXIR = 3;
 const MOVE_ELIXIR_GAIN = 1;
+const INITIAL_CLOCK_MS = 15 * 60 * 1000;
 
 const PIECE_VALUES = {
   p: 1,
   b: 3,
   n: 3,
   r: 5,
-  q: 7,
+  q: 9,
 };
 
 const RESERVE_COSTS = {
@@ -21,7 +22,7 @@ const RESERVE_COSTS = {
   B: 3,
   N: 3,
   R: 5,
-  Q: 7,
+  Q: 9,
 };
 
 const allowedOrigins = new Set([
@@ -383,6 +384,12 @@ export class GameRoom {
       w: 0,
       b: 0,
     };
+    state.moveHistory = [];
+    state.clocks = {
+      w: INITIAL_CLOCK_MS,
+      b: INITIAL_CLOCK_MS,
+    };
+    state.clockUpdatedAt = null;
 
     await this.saveState(state);
 
@@ -443,6 +450,7 @@ export class GameRoom {
       (!state.players.w || !state.players.b)
     ) {
       assignRandomColors(state);
+      startClock(state);
       role =
         getRole(
           state,
@@ -451,6 +459,7 @@ export class GameRoom {
     }
 
     await this.saveState(state);
+    await this.setClockAlarm(state);
 
     const payload =
       serializeState(
@@ -493,6 +502,25 @@ export class GameRoom {
     const game =
       new Chess(state.fen);
 
+    const turnNumber =
+      getTurnNumber(state.fen);
+
+    syncClock(state);
+
+    if (state.gameOver) {
+      await this.saveState(state);
+      this.broadcast(state);
+
+      return json(
+        serializeState(
+          state,
+          role
+        ),
+        200,
+        request
+      );
+    }
+
     if (role !== game.turn()) {
       return json(
         {
@@ -528,6 +556,18 @@ export class GameRoom {
         move.to,
       ],
     };
+    state.moveHistory =
+      appendMoveHistory(
+        state.moveHistory,
+        {
+          color: role,
+          turnNumber,
+          notation: move.san,
+          type: "move",
+          from: move.from,
+          to: move.to,
+        }
+      );
     state.drawOffer = null;
     state.elixir = normalizeElixir(state.elixir);
     state.elixir[role] += MOVE_ELIXIR_GAIN;
@@ -538,8 +578,11 @@ export class GameRoom {
         PIECE_VALUES[move.captured] || 0;
     }
     updateGameOver(state);
+    state.clockUpdatedAt =
+      Date.now();
 
     await this.saveState(state);
+    await this.setClockAlarm(state);
 
     this.broadcast(state);
 
@@ -578,6 +621,25 @@ export class GameRoom {
 
     const game =
       new Chess(state.fen);
+
+    const turnNumber =
+      getTurnNumber(state.fen);
+
+    syncClock(state);
+
+    if (state.gameOver) {
+      await this.saveState(state);
+      this.broadcast(state);
+
+      return json(
+        serializeState(
+          state,
+          role
+        ),
+        200,
+        request
+      );
+    }
 
     if (role !== game.turn()) {
       return json(
@@ -665,12 +727,30 @@ export class GameRoom {
         body.target,
       ],
     };
+    state.moveHistory =
+      appendMoveHistory(
+        state.moveHistory,
+        {
+          color: role,
+          turnNumber,
+          notation:
+            getReserveNotation(
+              body.pieceCode,
+              body.target
+            ),
+          type: "reserve",
+          to: body.target,
+        }
+      );
     state.drawOffer = null;
     state.elixir = normalizeElixir(state.elixir);
     state.elixir[role] -= cost;
     updateGameOver(state);
+    state.clockUpdatedAt =
+      Date.now();
 
     await this.saveState(state);
+    await this.setClockAlarm(state);
 
     this.broadcast(state);
 
@@ -812,6 +892,7 @@ export class GameRoom {
     }
 
     await this.saveState(state);
+    await this.setClockAlarm(state);
 
     this.broadcast(state);
 
@@ -915,6 +996,9 @@ export class GameRoom {
         "drawOffer",
         "elixir",
         "score",
+        "moveHistory",
+        "clocks",
+        "clockUpdatedAt",
       ]);
 
     return {
@@ -945,6 +1029,17 @@ export class GameRoom {
         normalizeScore(
           stored.get("score")
         ),
+      moveHistory:
+        normalizeMoveHistory(
+          stored.get("moveHistory")
+        ),
+      clocks:
+        normalizeClocks(
+          stored.get("clocks")
+        ),
+      clockUpdatedAt:
+        stored.get("clockUpdatedAt") ||
+        null,
     };
   }
 
@@ -958,7 +1053,57 @@ export class GameRoom {
       drawOffer: state.drawOffer,
       elixir: normalizeElixir(state.elixir),
       score: normalizeScore(state.score),
+      moveHistory:
+        normalizeMoveHistory(
+          state.moveHistory
+        ),
+      clocks:
+        normalizeClocks(
+          state.clocks
+        ),
+      clockUpdatedAt:
+        state.clockUpdatedAt || null,
     });
+  }
+
+  async setClockAlarm(state) {
+    if (
+      state.gameOver ||
+      !state.clockUpdatedAt
+    ) {
+      await this.ctx.storage.deleteAlarm();
+      return;
+    }
+
+    const game =
+      new Chess(state.fen);
+
+    const clocks =
+      normalizeClocks(state.clocks);
+
+    await this.ctx.storage.setAlarm(
+      Date.now() +
+      Math.max(
+        0,
+        clocks[game.turn()]
+      )
+    );
+  }
+
+  async alarm() {
+    const state =
+      await this.getState();
+
+    if (state.gameOver) {
+      return;
+    }
+
+    syncClock(state);
+
+    await this.saveState(state);
+    await this.setClockAlarm(state);
+
+    this.broadcast(state);
   }
 
   broadcast(state) {
@@ -1283,6 +1428,8 @@ function serializeState(
 ) {
   const game =
     new Chess(state.fen);
+  const clockState =
+    getClockState(state);
 
   return {
     fen: state.fen,
@@ -1298,6 +1445,13 @@ function serializeState(
     gameOver: state.gameOver,
     elixir: normalizeElixir(state.elixir),
     score: normalizeScore(state.score),
+    moveHistory:
+      normalizeMoveHistory(
+        state.moveHistory
+      ),
+    clocks: clockState.clocks,
+    clockUpdatedAt:
+      clockState.clockUpdatedAt,
     lastMove: state.lastMove,
   };
 }
@@ -1322,6 +1476,125 @@ function normalizeScore(score) {
       ? score.b
       : 0,
   };
+}
+
+function normalizeMoveHistory(moveHistory) {
+  return Array.isArray(moveHistory)
+    ? moveHistory
+    : [];
+}
+
+function appendMoveHistory(
+  moveHistory,
+  move
+) {
+  return [
+    ...normalizeMoveHistory(moveHistory),
+    move,
+  ];
+}
+
+function normalizeClocks(clocks) {
+  return {
+    w: Number.isFinite(clocks?.w)
+      ? clocks.w
+      : INITIAL_CLOCK_MS,
+    b: Number.isFinite(clocks?.b)
+      ? clocks.b
+      : INITIAL_CLOCK_MS,
+  };
+}
+
+function startClock(state) {
+  state.clocks =
+    normalizeClocks(state.clocks);
+
+  state.clockUpdatedAt =
+    Date.now();
+}
+
+function getClockState(state) {
+  const clockState = {
+    clocks:
+      normalizeClocks(state.clocks),
+    clockUpdatedAt:
+      state.clockUpdatedAt || null,
+  };
+
+  if (
+    state.gameOver ||
+    !clockState.clockUpdatedAt
+  ) {
+    return clockState;
+  }
+
+  const game =
+    new Chess(state.fen);
+
+  const turn =
+    game.turn();
+
+  const elapsed =
+    Date.now() -
+    clockState.clockUpdatedAt;
+
+  clockState.clocks[turn] =
+    Math.max(
+      0,
+      clockState.clocks[turn] - elapsed
+    );
+
+  return clockState;
+}
+
+function syncClock(state) {
+  if (
+    state.gameOver ||
+    !state.clockUpdatedAt
+  ) {
+    return;
+  }
+
+  const game =
+    new Chess(state.fen);
+
+  const turn =
+    game.turn();
+
+  const now =
+    Date.now();
+
+  const elapsed =
+    now - state.clockUpdatedAt;
+
+  state.clocks =
+    normalizeClocks(state.clocks);
+
+  state.clocks[turn] =
+    Math.max(
+      0,
+      state.clocks[turn] - elapsed
+    );
+
+  state.clockUpdatedAt = now;
+
+  if (state.clocks[turn] === 0) {
+    state.gameOver = {
+      reason: "timeout",
+      winner: oppositeColor(turn),
+    };
+  }
+}
+
+function getTurnNumber(fen) {
+  return Number(fen.split(" ")[5]) || 1;
+}
+
+function getReserveNotation(
+  pieceCode,
+  target
+) {
+  return `${pieceCode?.[1] || "P"}@${target}`;
 }
 
 function normalizePlayers(players) {

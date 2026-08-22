@@ -48,6 +48,13 @@ export const appState = {
     w: 0,
     b: 0,
   },
+  moveHistory: [],
+  clocks: {
+    w: 15 * 60 * 1000,
+    b: 15 * 60 * 1000,
+  },
+  clockUpdatedAt: null,
+  clockTurn: "w",
   statusMessage: "",
 
   hasReceivedServerState: false,

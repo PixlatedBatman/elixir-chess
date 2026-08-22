@@ -35,66 +35,72 @@ import {
 document.querySelector("#app").innerHTML = `
   <div class="page">
 
-    <section id="home-view"
-        class="screen-panel home-panel">
-      <h1>Elixir Chess</h1>
-      <p class="byline">Made by Karthik Kashyap</p>
+    <div id="home-view"
+        class="home-wrapper">
+      <section class="screen-panel home-panel">
+        <h1>Elixir Chess</h1>
+        <p class="byline">Made by Karthik Kashyap</p>
 
-      <div class="actions home-actions">
-        <button id="create-game"
-            type="button">
-          Create Game
-        </button>
+        <div class="actions home-actions">
+          <button id="create-game"
+              type="button">
+            Create Game
+          </button>
 
-        <button id="join-game-home"
-            type="button"
-            class="secondary-button">
-          Join Game
-        </button>
+          <button id="join-game-home"
+              type="button">
+            Join Game
+          </button>
 
-        <button id="join-existing-home"
-            type="button"
-            class="secondary-button">
-          Join Existing Room
-        </button>
+          <button id="join-existing-home"
+              type="button">
+            Join Existing Room
+          </button>
 
-        <button id="rules-button"
-            type="button"
-            class="secondary-button">
-          Rules
-        </button>
+          <button id="rules-button"
+              type="button">
+            Rules
+          </button>
 
-        <button id="contact-button"
-            type="button"
-            class="secondary-button">
-          Contact
-        </button>
-      </div>
-
-      <form id="existing-room-form"
-          class="room-entry hidden">
-        <label for="existing-room-input">Room number</label>
-
-        <div class="room-entry-row">
-          <input id="existing-room-input"
-              name="room"
-              autocomplete="off"
-              inputmode="text"
-              placeholder="Enter room number" />
-
-          <button type="submit">Enter</button>
+          <button id="contact-button"
+              type="button">
+            Contact
+          </button>
         </div>
 
-        <p id="existing-room-message"
-            class="form-message"></p>
-      </form>
+        <form id="existing-room-form"
+            class="room-entry hidden">
+          <label for="existing-room-input">Room number</label>
 
-      <div id="contact-panel"
-          class="info-panel hidden">
-        <h2>Contact</h2>
-        <p>This game is vibe coded and can hence have a lot of bugs. If you find any or if you would like to give any suggestions or updates, feel free to mail me at <a href="mailto:contact@karthikkashyap.com">contact@karthikkashyap.com</a>.</p>
-      </div>
-    </section>
+          <div class="room-entry-row">
+            <input id="existing-room-input"
+                name="room"
+                autocomplete="off"
+                inputmode="text"
+                placeholder="Enter room number" />
+
+            <button type="submit">Enter</button>
+          </div>
+
+          <p id="existing-room-message"
+              class="form-message"></p>
+        </form>
+
+        <div id="contact-panel"
+            class="info-panel hidden">
+          <h2>Contact</h2>
+          <p>This game is vibe coded and can hence have a lot of bugs. If you find any or if you would like to give any suggestions, feel free to mail me at <a href="mailto:elixirchess@karthikkashyap.com">elixirchess@karthikkashyap.com</a>.</p>
+        </div>
+      </section>
+
+      <footer class="home-screen-footer">
+        <button id="changelog-button"
+            type="button"
+            class="changelog-link-button">
+          Changelog
+        </button>
+      </footer>
+    </div>
 
     <section id="rules-view"
         class="screen-panel rules-page hidden">
@@ -130,7 +136,7 @@ document.querySelector("#app").innerHTML = `
 
       <div class="rules-section">
         <h2>Reserve Costs</h2>
-        <p>Pawn costs 1 Elixir. Bishop costs 3 Elixir. Knight costs 3 Elixir. Rook costs 5 Elixir. Queen costs 7 Elixir.</p>
+        <p>Pawn costs 1 Elixir. Bishop costs 3 Elixir. Knight costs 3 Elixir. Rook costs 5 Elixir. Queen costs 9 Elixir.</p>
       </div>
 
       <div class="rules-section">
@@ -141,12 +147,105 @@ document.querySelector("#app").innerHTML = `
 
       <div class="rules-section">
         <h2>Captures and Score</h2>
-        <p>Captures follow normal chess rules. When you capture a piece, your score increases by that piece's value: Pawn 1, Bishop 3, Knight 3, Rook 5, and Queen 7.</p>
+        <p>Captures follow normal chess rules. When you capture a piece, your score increases by that piece's value: Pawn 1, Bishop 3, Knight 3, Rook 5, and Queen 9.</p>
       </div>
 
       <div class="rules-section">
         <h2>Draws and Resignation</h2>
         <p>A player may resign to end the game immediately. A player may also offer a draw; the game ends as a draw only if the opponent accepts it.</p>
+      </div>
+    </section>
+
+    <section id="changelog-view"
+        class="screen-panel changelog-page hidden">
+      <div class="rules-header">
+        <div>
+          <h1>Changelog</h1>
+          <p class="byline">Project updates & release notes</p>
+        </div>
+
+        <button id="changelog-home-button"
+            type="button"
+            class="secondary-button compact-button">
+          Home
+        </button>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.6</h2>
+          <span class="changelog-date">August 22, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>UI Symmetry & Player HUDs:</strong> Symmetrical player HUD cards combining 15-minute blitz clocks, Elixir counters, and capture scores above a centered board.</li>
+          <li><strong>Horizontal Move History:</strong> Horizontal scrolling move ribbon with custom chevron scroll buttons and hidden scrollbar.</li>
+          <li><strong>Interactive Modals:</strong> Modal popup dialogs for Draw offers and Game Over (displaying winner, reason, and a continue button to review the board).</li>
+          <li><strong>Home Screen & Changelog:</strong> Highlighted all home action buttons with gold theme and added a dedicated Changelog page accessible from the bottom of the screen.</li>
+          <li><strong>Balance, Contact & License:</strong> Queen piece value updated to 9, board rank/file coordinates added, dedicated contact email at <code>elixirchess@karthikkashyap.com</code>, and added MIT license documentation.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.5</h2>
+          <span class="changelog-date">August 18, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Sound Effects:</strong> Added dedicated audio module and sound effects for normal moves, captures, checkmate/timeout, and victory.</li>
+          <li><strong>Rules Subpage:</strong> Added dedicated rules subpage with detailed variant rules, improved piece capture interactions, and removed mobile image drag popups.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.4</h2>
+          <span class="changelog-date">June 29, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Matchmaking & Home Info:</strong> Added home page info panels, online matchmaking system with room code lobbies, and web app favicon metadata.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.3</h2>
+          <span class="changelog-date">May 25, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Score & Navigation:</strong> Added home navigation button and live material capture score tracking on the game page.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.2</h2>
+          <span class="changelog-date">May 25, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Mobile Support:</strong> Added touch gesture support and responsive layout scaling for mobile screens.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.1</h2>
+          <span class="changelog-date">May 24, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Elixir System & Game Actions:</strong> Added resign and draw actions, initial functional implementation of the Elixir resource system, and red square visual indicators for attacks and check.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.0</h2>
+          <span class="changelog-date">May 13, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Multiplayer Foundation:</strong> Added WebSocket multiplayer support with Cloudflare Workers backend and custom domain configuration.</li>
+          <li><strong>Reserve Mechanics:</strong> Implemented reserve piece deployment system (Queens, Rooks, Bishops, Knights, Pawns) and board orientation inversion for Black.</li>
+          <li><strong>Chess Engine:</strong> Working chess rule validation model and initial variant architecture.</li>
+        </ul>
       </div>
     </section>
 
@@ -197,16 +296,36 @@ document.querySelector("#app").innerHTML = `
         </div>
       </div>
 
-      <div class="elixir-panel">
-        <div id="white-elixir"
-            class="elixir-balance"></div>
+      <div class="players-panel">
+        <div id="white-player-hud"
+            class="player-hud">
+          <div class="player-details">
+            <span class="player-label">White</span>
+            <span id="white-elixir"
+                class="player-stats"></span>
+          </div>
 
-        <div id="black-elixir"
-            class="elixir-balance"></div>
+          <div id="white-clock"
+              class="clock"></div>
+        </div>
+
+        <div id="black-player-hud"
+            class="player-hud">
+          <div class="player-details">
+            <span class="player-label">Black</span>
+            <span id="black-elixir"
+                class="player-stats"></span>
+          </div>
+
+          <div id="black-clock"
+              class="clock"></div>
+        </div>
       </div>
 
-      <div id="board"
-          class="board"></div>
+      <div class="board-wrap">
+        <div id="board"
+            class="board"></div>
+      </div>
 
       <div class="game-actions">
         <button id="offer-draw"
@@ -223,28 +342,78 @@ document.querySelector("#app").innerHTML = `
       </div>
 
       <div id="draw-offer"
-          class="draw-offer hidden">
-        <span id="draw-offer-text"></span>
+          class="modal-backdrop hidden">
+        <div class="draw-offer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="draw-offer-text">
+          <span id="draw-offer-text"></span>
 
-        <button id="accept-draw"
-            type="button">
-          Accept Draw
-        </button>
+          <div class="modal-actions">
+            <button id="accept-draw"
+                type="button">
+              Accept Draw
+            </button>
 
-        <button id="decline-draw"
-            type="button"
-            class="secondary-button">
-          Decline
-        </button>
+            <button id="decline-draw"
+                type="button"
+                class="secondary-button">
+              Decline
+            </button>
+          </div>
+        </div>
       </div>
 
       <div id="reserve"
           class="reserve"></div>
 
       <div id="game-over"
-          class="game-over hidden">
-        <h2>Game Over</h2>
-        <p id="game-over-text"></p>
+          class="modal-backdrop hidden">
+        <div class="game-over-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="game-over-title">
+          <h2 id="game-over-title">Game Over</h2>
+
+          <div class="game-over-content">
+            <p id="game-over-winner"
+                class="game-over-winner"></p>
+            <p id="game-over-reason"
+                class="game-over-reason"></p>
+          </div>
+
+          <div class="modal-actions">
+            <button id="game-over-continue"
+                type="button">
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="history-panel">
+        <h2>Moves</h2>
+
+        <button id="history-scroll-left"
+            type="button"
+            class="history-scroll-btn"
+            aria-label="Scroll moves left">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <div id="move-history"
+            class="move-history"></div>
+
+        <button id="history-scroll-right"
+            type="button"
+            class="history-scroll-btn"
+            aria-label="Scroll moves right">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
       </div>
     </section>
 
@@ -259,6 +428,9 @@ const lobbyView =
 
 const rulesView =
   document.getElementById("rules-view");
+
+const changelogView =
+  document.getElementById("changelog-view");
 
 const gameView =
   document.getElementById("game-view");
@@ -290,11 +462,32 @@ const whitePlayerElement =
 const blackPlayerElement =
   document.getElementById("black-player");
 
+const whitePlayerHudElement =
+  document.getElementById("white-player-hud");
+
+const blackPlayerHudElement =
+  document.getElementById("black-player-hud");
+
 const whiteElixirElement =
   document.getElementById("white-elixir");
 
 const blackElixirElement =
   document.getElementById("black-elixir");
+
+const whiteClockElement =
+  document.getElementById("white-clock");
+
+const blackClockElement =
+  document.getElementById("black-clock");
+
+const moveHistoryElement =
+  document.getElementById("move-history");
+
+const historyScrollLeftButton =
+  document.getElementById("history-scroll-left");
+
+const historyScrollRightButton =
+  document.getElementById("history-scroll-right");
 
 const offerDrawButton =
   document.getElementById("offer-draw");
@@ -317,8 +510,17 @@ const declineDrawButton =
 const gameOverElement =
   document.getElementById("game-over");
 
-const gameOverTextElement =
-  document.getElementById("game-over-text");
+const gameOverWinnerElement =
+  document.getElementById("game-over-winner");
+
+const gameOverReasonElement =
+  document.getElementById("game-over-reason");
+
+const gameOverContinueButton =
+  document.getElementById("game-over-continue");
+
+let gameOverDismissed = false;
+let lastSeenGameOverKey = null;
 
 const existingRoomForm =
   document.getElementById("existing-room-form");
@@ -414,6 +616,20 @@ document
     goHome
   );
 
+document
+  .getElementById("changelog-button")
+  ?.addEventListener(
+    "click",
+    goToChangelog
+  );
+
+document
+  .getElementById("changelog-home-button")
+  ?.addEventListener(
+    "click",
+    goHome
+  );
+
 offerDrawButton.addEventListener(
   "click",
   offerDraw
@@ -439,7 +655,40 @@ homeButton.addEventListener(
   goHome
 );
 
+historyScrollLeftButton.addEventListener(
+  "click",
+  () => {
+    moveHistoryElement.scrollBy({
+      left: -120,
+      behavior: "smooth",
+    });
+  }
+);
+
+historyScrollRightButton.addEventListener(
+  "click",
+  () => {
+    moveHistoryElement.scrollBy({
+      left: 120,
+      behavior: "smooth",
+    });
+  }
+);
+
+gameOverContinueButton.addEventListener(
+  "click",
+  () => {
+    gameOverDismissed = true;
+    gameOverElement.classList.add("hidden");
+  }
+);
+
 renderApp();
+
+window.setInterval(
+  renderClocks,
+  1000
+);
 
 if (appState.roomId) {
   connectRoom();
@@ -453,6 +702,11 @@ function goHome() {
 function goToRules() {
   window.location.href =
     `${window.location.pathname}?rules=1`;
+}
+
+function goToChangelog() {
+  window.location.href =
+    `${window.location.pathname}?changelog=1`;
 }
 
 async function createGame() {
@@ -623,6 +877,11 @@ function renderApp() {
       window.location.search
     ).has("rules");
 
+  const showingChangelog =
+    new URLSearchParams(
+      window.location.search
+    ).has("changelog");
+
   const hasRoom =
     Boolean(appState.roomId);
 
@@ -634,7 +893,7 @@ function renderApp() {
 
   homeView.classList.toggle(
     "hidden",
-    showingRules || hasRoom
+    showingRules || showingChangelog || hasRoom
   );
 
   rulesView.classList.toggle(
@@ -642,17 +901,22 @@ function renderApp() {
     !showingRules
   );
 
+  changelogView.classList.toggle(
+    "hidden",
+    !showingChangelog
+  );
+
   lobbyView.classList.toggle(
     "hidden",
-    showingRules || !hasRoom || gameReady
+    showingRules || showingChangelog || !hasRoom || gameReady
   );
 
   gameView.classList.toggle(
     "hidden",
-    showingRules || !hasRoom || !gameReady
+    showingRules || showingChangelog || !hasRoom || !gameReady
   );
 
-  if (showingRules || !hasRoom) {
+  if (showingRules || showingChangelog || !hasRoom) {
     return;
   }
 
@@ -722,22 +986,24 @@ function renderGame() {
     `Room ${appState.roomId}`;
 
   renderDrawControls();
+  renderClocks();
+  renderMoveHistory();
   renderGameOver();
 }
 
 function renderElixir() {
   whiteElixirElement.textContent =
-    `White Elixir: ${appState.elixir?.w ?? 0} | Score: ${appState.score?.w ?? 0}`;
+    `Elixir: ${appState.elixir?.w ?? 0} | Score: ${appState.score?.w ?? 0}`;
 
   blackElixirElement.textContent =
-    `Black Elixir: ${appState.elixir?.b ?? 0} | Score: ${appState.score?.b ?? 0}`;
+    `Elixir: ${appState.elixir?.b ?? 0} | Score: ${appState.score?.b ?? 0}`;
 
-  whiteElixirElement.classList.toggle(
+  whitePlayerHudElement.classList.toggle(
     "mine",
     appState.playerColor === "w"
   );
 
-  blackElixirElement.classList.toggle(
+  blackPlayerHudElement.classList.toggle(
     "mine",
     appState.playerColor === "b"
   );
@@ -780,25 +1046,173 @@ function renderDrawControls() {
   }
 }
 
-function renderGameOver() {
-  gameOverElement.classList.toggle(
-    "hidden",
-    !appState.gameOver
-  );
-
-  if (!appState.gameOver) {
+function renderClocks() {
+  if (
+    !whiteClockElement ||
+    !blackClockElement
+  ) {
     return;
   }
 
-  gameOverTextElement.textContent =
-    getGameOverText(
-      appState.gameOver
-    );
+  const clocks =
+    getDisplayClocks();
+
+  whiteClockElement.textContent =
+    formatClock(clocks.w);
+
+  blackClockElement.textContent =
+    formatClock(clocks.b);
+
+  whiteClockElement.classList.toggle(
+    "active",
+    appState.clockTurn === "w" &&
+    !appState.gameOver
+  );
+
+  blackClockElement.classList.toggle(
+    "active",
+    appState.clockTurn === "b" &&
+    !appState.gameOver
+  );
 }
 
-function getGameOverText(gameOver) {
+function getDisplayClocks() {
+  const clocks = {
+    w: appState.clocks?.w ?? 15 * 60 * 1000,
+    b: appState.clocks?.b ?? 15 * 60 * 1000,
+  };
+
+  if (
+    appState.gameOver ||
+    !appState.clockUpdatedAt ||
+    (
+      appState.clockTurn !== "w" &&
+      appState.clockTurn !== "b"
+    )
+  ) {
+    return clocks;
+  }
+
+  const elapsed =
+    Date.now() -
+    appState.clockUpdatedAt;
+
+  return {
+    ...clocks,
+    [appState.clockTurn]:
+      Math.max(
+        0,
+        clocks[appState.clockTurn] - elapsed
+      ),
+  };
+}
+
+function formatClock(milliseconds) {
+  const totalSeconds =
+    Math.max(
+      0,
+      Math.ceil(milliseconds / 1000)
+    );
+
+  const minutes =
+    Math.floor(totalSeconds / 60);
+
+  const seconds =
+    totalSeconds % 60;
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function renderMoveHistory() {
+  if (!moveHistoryElement) {
+    return;
+  }
+
+  const moves =
+    appState.moveHistory || [];
+
+  if (moves.length === 0) {
+    moveHistoryElement.innerHTML =
+      `<div class="history-empty">No moves yet</div>`;
+    return;
+  }
+
+  const rows =
+    new Map();
+
+  for (const move of moves) {
+    if (!rows.has(move.turnNumber)) {
+      rows.set(
+        move.turnNumber,
+        {
+          w: "",
+          b: "",
+        }
+      );
+    }
+
+    rows.get(move.turnNumber)[move.color] =
+      move.notation;
+  }
+
+  moveHistoryElement.innerHTML =
+    Array.from(rows.entries())
+      .map(([turnNumber, row]) => `
+        <div class="history-item">
+          <span class="history-turn">${turnNumber}.</span>
+          <span class="white-move">${row.w || ""}</span>
+          ${row.b ? `<span class="black-move">${row.b}</span>` : ""}
+        </div>
+      `)
+      .join("");
+
+  moveHistoryElement.scrollLeft =
+    moveHistoryElement.scrollWidth;
+}
+
+function renderGameOver() {
+  if (!appState.gameOver) {
+    gameOverDismissed = false;
+    lastSeenGameOverKey = null;
+    gameOverElement.classList.add("hidden");
+    return;
+  }
+
+  const currentKey =
+    `${appState.gameOver.reason}:${appState.gameOver.winner}`;
+
+  if (lastSeenGameOverKey !== currentKey) {
+    lastSeenGameOverKey = currentKey;
+    gameOverDismissed = false;
+  }
+
+  gameOverElement.classList.toggle(
+    "hidden",
+    gameOverDismissed
+  );
+
+  if (gameOverDismissed) {
+    return;
+  }
+
+  const { winnerText, reasonText } =
+    getGameOverDetails(appState.gameOver);
+
+  if (gameOverWinnerElement) {
+    gameOverWinnerElement.textContent = winnerText;
+  }
+
+  if (gameOverReasonElement) {
+    gameOverReasonElement.textContent = reasonText;
+  }
+}
+
+function getGameOverDetails(gameOver) {
   if (gameOver.reason === "draw") {
-    return "The game ended in a draw.";
+    return {
+      winnerText: "Draw",
+      reasonText: "The game ended in a draw.",
+    };
   }
 
   const winner =
@@ -806,9 +1220,15 @@ function getGameOverText(gameOver) {
       ? "White"
       : "Black";
 
+  let reason = "by checkmate";
   if (gameOver.reason === "resignation") {
-    return `${winner} won by resignation.`;
+    reason = "by resignation";
+  } else if (gameOver.reason === "timeout") {
+    reason = "on time";
   }
 
-  return `${winner} won by checkmate.`;
+  return {
+    winnerText: `${winner} Won!`,
+    reasonText: `Won ${reason}.`,
+  };
 }

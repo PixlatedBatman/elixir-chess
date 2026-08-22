@@ -1,200 +1,184 @@
 # Elixir Chess
 
-## Project Goal
+A playable online chess variant where each turn can be either a normal chess move or a reserve-piece placement paid for with Elixir.
 
-A custom chess variant where players can either:
+## Game Rules
 
-1. Move an existing piece normally
-2. Deploy reserve pieces onto the board
+Elixir Chess follows normal chess rules for movement, turns, check, checkmate, castling, en passant, and promotion. Pawn promotion currently promotes to a queen.
 
-Future goal:
+On your turn, choose one action:
 
-- Online multiplayer
-- Currency/economy system
-- Hosted website
+- Move an existing piece normally.
+- Spend Elixir to place a reserve piece.
 
----
-
-## Variant Rules
-
-- Each turn:
-  - make a normal chess move
-    OR
-  - deploy a reserve piece
-
-- Reserve pieces:
-  - Queen
-  - Rook
-  - Bishop
-  - Knight
-  - Pawn
-
-- Infinite reserve for now
-
-- Reserve pieces:
-  - can only be placed on empty squares
-  - can only be placed on:
-    - ranks 1-2 for white
-    - ranks 7-8 for black
-
-- Reserve placement:
-  - may give check
-  - may give checkmate
-  - may block check
-  - must not leave own king in check
-
-- Once deployed:
-  - reserve pieces become normal pieces
-  - reserve rooks may castle
-
-- Checkmate:
-  - occurs only if:
-    - no legal board move exists
-      AND
-    - no legal reserve placement exists
-
----
-
-## Score
-
-- Score is the total material value of pieces captured by each player.
-- Captured piece values:
-  - Pawn: 1
-  - Bishop: 3
-  - Knight: 3
-  - Rook: 5
-  - Queen: 7
-- The backend owns score calculation and broadcasts both players' scores.
-
----
-
-## Elixir Economy
+## Elixir
 
 - Each player starts with 3 Elixir.
 - A normal board move gives the moving player +1 Elixir.
-- Deploying a reserve piece costs Elixir and does not award +1 Elixir.
-- Reserve piece costs:
-  - Pawn: 1
-  - Bishop: 3
-  - Knight: 3
-  - Rook: 5
-  - Queen: 7
+- Placing a reserve piece costs Elixir and uses the turn.
+- Reserve placements do not give +1 Elixir.
 - Both players can see both Elixir balances.
-- The backend owns all Elixir balances and validates reserve purchases.
+- The backend owns Elixir balances and validates reserve purchases.
 
----
+Reserve costs:
 
-## Current Architecture
+- Pawn: 1
+- Bishop: 3
+- Knight: 3
+- Rook: 5
+- Queen: 9
+
+## Reserve Pieces
+
+Reserve Pieces are extra pieces a player can summon onto the board instead of moving a piece already in play.
+
+Available reserve pieces:
+
+- Queen
+- Rook
+- Bishop
+- Knight
+- Pawn
+
+Placement rules:
+
+- Reserve pieces must be your own color.
+- Reserve pieces can only be placed on empty squares.
+- White may place reserves on ranks 1 and 2.
+- Black may place reserves on ranks 7 and 8.
+- A placement may give check, give checkmate, or block check.
+- A placement is illegal if it leaves your own king in check.
+- Once placed, reserve pieces behave like normal pieces.
+
+## Score
+
+Score is the total material value of pieces captured by each player. The backend calculates score and broadcasts both players' scores.
+
+Captured piece values:
+
+- Pawn: 1
+- Bishop: 3
+- Knight: 3
+- Rook: 5
+- Queen: 9
+
+## Multiplayer
+
+The game supports online rooms through a Cloudflare Worker backend and Durable Object room state.
+
+Home screen actions:
+
+- Create Game: creates a new room and opens its lobby.
+- Join Game: finds an open match or creates one.
+- Join Existing Room: joins a specific room number.
+- Rules: opens the dedicated rulebook page.
+- Contact: shows contact information.
+
+Room behavior:
+
+- The first unique player joins as Player 1.
+- The second unique player joins as Player 2.
+- When both players are present, colors are randomly assigned.
+- Later visitors spectate.
+- The backend owns legal moves, reserve placements, Elixir, score, resignations, draw offers, draw acceptance, color assignment, and game-over state.
+
+## Interaction
+
+- Pieces can be dragged and dropped.
+- Pieces can also be selected and placed by clicking/tapping.
+- Click/tap movement supports captures.
+- Reserve pieces can be selected or dragged onto legal reserve squares.
+- Legal moves, captures, selected squares, the last move, and check are highlighted.
+- Piece images disable browser-native drag behavior to avoid mobile image popups where possible.
+
+## Sounds
+
+Sound files live in `frontend/public/sounds/`.
+
+Current sounds:
+
+- `move.mp3`: normal moves, reserve placements, and checks
+- `capture.mp3`: captures
+- `victory.mp3`: winner, and both players in a draw
+- `game_over.mp3`: losing player
+
+Browsers require a user interaction before audio can play, so sounds unlock after the first click or tap.
+
+## Architecture
 
 Frontend:
 
 - Vite
-- Vanilla JS
+- Vanilla JavaScript
 - CSS
+- `chess.js` for local board state, legal move highlighting, and immediate UI feedback
 
-Server:
+Backend:
 
-- Cloudflare Worker backend
-- Durable Object room state
+- Cloudflare Worker
+- Durable Objects for room state
 - WebSockets for live updates
-- Node HTTP server remains useful for local/static testing
+- `chess.js` for authoritative move validation
 
-Chess engine:
+Shared logic:
 
-- chess.js
+- Reserve placement rules live in `shared/variantRules.js`.
+- Custom variant rules should stay outside `chess.js` internals.
 
-Current rendering:
+Important files:
 
-- partially custom board rendering
-- chessboard.js being phased out
+- `frontend/src/main.js`: UI layout and view routing
+- `frontend/src/interaction.js`: board and reserve interactions
+- `frontend/src/render.js`: board and reserve rendering
+- `frontend/src/api.js`: room API, WebSocket updates, server-state application
+- `frontend/src/sound.js`: sound loading and playback
+- `frontend/src/state.js`: client state
+- `shared/variantRules.js`: reserve placement rules
+- `worker/src/index.js`: production multiplayer backend
+- `server.js`: local Node static/API server
 
-Important:
+## Development
 
-- browser native drag-and-drop should NOT be used
-- interactions should be state-driven
+Install dependencies:
 
-Main files:
+```bash
+npm install
+```
 
-- server.js
-- game.js
-- state.js
-- render.js
-- interaction.js
-- variantRules.js
-- api.js
+Run the frontend dev server:
 
----
+```bash
+npm run dev
+```
 
-## Multiplayer Development
-
-Build and run the hosted version locally:
+Build the frontend:
 
 ```bash
 npm run build
+```
+
+Serve the built frontend with the local Node server:
+
+```bash
 npm start
 ```
 
-Then open:
+Run the Worker locally:
 
-```text
-http://localhost:3000
+```bash
+npm run worker:dev
 ```
 
-The home page does not join a game automatically. Use the home screen to:
+Deploy the Worker:
 
-- create a game, which asks the backend for a room id and navigates to that `?room=` lobby
-- join a backend-created game by entering a room number
-
-The lobby waits until both players are present:
-
-- first unique player joins as white
-- second unique player joins as black
-- later visitors spectate
-
-Once Player 1 and Player 2 are both present, the backend randomly assigns white and black, then the game board appears. The server owns legal moves, reserve placements, resignations, draw offers, draw acceptance, color assignment, and game-over state. The browser still uses chess.js locally for highlighting and immediate UI state.
-
----
-
-## Current Working Features
-
-- Board rendering
-- Legal chess moves
-- Turn enforcement
-- Highlight legal moves
-- Piece movement
-- Reserve piece display
-- Reserve legality checks
-
----
-
-## Current Broken Feature
-
-Reserve piece dragging:
-
-- reserve pieces should visually attach to cursor
-- like normal chess dragging
-- current implementation does not work correctly
-
-Need:
-
-- custom floating drag layer
-- NOT browser drag-and-drop
-
----
-
-## Engineering Decisions
-
-- chess.js is used as:
-  - move validator
-  - legality engine
-
-- Variant logic lives separately in:
-  - variantRules.js
-
-- Custom rules should NOT modify chess.js internals
-
-- Future multiplayer:
-  - likely Socket.IO
-  - authoritative server
+```bash
+npm run worker:deploy
+```
 
 - Future economy system planned
+
+## License
+
+The source code of Elixir Chess is licensed under the MIT License.
+
+Elixir Chess, its name, branding, and associated artwork are not necessarily licensed under the MIT License.
