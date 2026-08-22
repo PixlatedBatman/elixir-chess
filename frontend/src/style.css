@@ -48,13 +48,7 @@ body {
   line-height: 1.1;
 }
 
-.rules-page {
-  width: min(92vw, 720px);
-
-  max-height: calc(100vh - 48px);
-  overflow: auto;
-}
-
+.rules-page,
 .changelog-page {
   width: min(92vw, 720px);
   max-height: none;
