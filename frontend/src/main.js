@@ -277,8 +277,26 @@ document.querySelector("#app").innerHTML = `
       <div class="history-panel">
         <h2>Moves</h2>
 
+        <button id="history-scroll-left"
+            type="button"
+            class="history-scroll-btn"
+            aria-label="Scroll moves left">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
         <div id="move-history"
             class="move-history"></div>
+
+        <button id="history-scroll-right"
+            type="button"
+            class="history-scroll-btn"
+            aria-label="Scroll moves right">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
       </div>
     </section>
 
@@ -344,6 +362,12 @@ const blackClockElement =
 
 const moveHistoryElement =
   document.getElementById("move-history");
+
+const historyScrollLeftButton =
+  document.getElementById("history-scroll-left");
+
+const historyScrollRightButton =
+  document.getElementById("history-scroll-right");
 
 const offerDrawButton =
   document.getElementById("offer-draw");
@@ -486,6 +510,26 @@ declineDrawButton.addEventListener(
 homeButton.addEventListener(
   "click",
   goHome
+);
+
+historyScrollLeftButton.addEventListener(
+  "click",
+  () => {
+    moveHistoryElement.scrollBy({
+      left: -120,
+      behavior: "smooth",
+    });
+  }
+);
+
+historyScrollRightButton.addEventListener(
+  "click",
+  () => {
+    moveHistoryElement.scrollBy({
+      left: 120,
+      behavior: "smooth",
+    });
+  }
 );
 
 renderApp();

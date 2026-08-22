@@ -514,8 +514,8 @@ button:disabled {
   display: flex;
   align-items: center;
 
-  gap: 12px;
-  padding: 8px 14px;
+  gap: 8px;
+  padding: 8px 12px;
 
   background: #2a2a2a;
 
@@ -533,6 +533,41 @@ button:disabled {
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.history-scroll-btn {
+  width: 26px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #1e1e1e;
+  color: #f0d9b5;
+  border: 1px solid #444;
+  border-radius: 6px;
+
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.history-scroll-btn:hover {
+  background: #383838;
+  border-color: #f0d9b5;
+  color: #fff;
+}
+
+.history-scroll-btn:active {
+  transform: scale(0.92);
+}
+
+.history-scroll-btn svg {
+  display: block;
 }
 
 .move-history {
@@ -547,22 +582,13 @@ button:disabled {
   overflow-y: hidden;
   white-space: nowrap;
 
-  padding: 2px 0 4px;
-  scrollbar-width: thin;
+  padding: 2px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .move-history::-webkit-scrollbar {
-  height: 4px;
-}
-
-.move-history::-webkit-scrollbar-track {
-  background: #202020;
-  border-radius: 2px;
-}
-
-.move-history::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 2px;
+  display: none;
 }
 
 .history-item {
@@ -805,17 +831,29 @@ button:disabled {
   }
 
   .history-panel {
-    padding: 6px 10px;
-    gap: 8px;
+    padding: 6px 8px;
+    gap: 6px;
   }
 
   .history-panel h2 {
-    font-size: 13px;
+    font-size: 12px;
+    margin-right: 0;
+  }
+
+  .history-scroll-btn {
+    width: 22px;
+    height: 22px;
+    min-height: 22px;
+  }
+
+  .history-scroll-btn svg {
+    width: 12px;
+    height: 12px;
   }
 
   .history-item {
-    padding: 3px 6px;
-    font-size: 12px;
-    gap: 4px;
+    padding: 3px 5px;
+    font-size: 11px;
+    gap: 3px;
   }
 }
