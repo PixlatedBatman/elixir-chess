@@ -948,16 +948,16 @@ function renderMoveHistory() {
   moveHistoryElement.innerHTML =
     Array.from(rows.entries())
       .map(([turnNumber, row]) => `
-        <div class="history-row">
+        <div class="history-item">
           <span class="history-turn">${turnNumber}.</span>
-          <span>${row.w || ""}</span>
-          <span>${row.b || ""}</span>
+          <span class="white-move">${row.w || ""}</span>
+          ${row.b ? `<span class="black-move">${row.b}</span>` : ""}
         </div>
       `)
       .join("");
 
-  moveHistoryElement.scrollTop =
-    moveHistoryElement.scrollHeight;
+  moveHistoryElement.scrollLeft =
+    moveHistoryElement.scrollWidth;
 }
 
 function renderGameOver() {
