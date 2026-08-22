@@ -47,26 +47,22 @@ document.querySelector("#app").innerHTML = `
         </button>
 
         <button id="join-game-home"
-            type="button"
-            class="secondary-button">
+            type="button">
           Join Game
         </button>
 
         <button id="join-existing-home"
-            type="button"
-            class="secondary-button">
+            type="button">
           Join Existing Room
         </button>
 
         <button id="rules-button"
-            type="button"
-            class="secondary-button">
+            type="button">
           Rules
         </button>
 
         <button id="contact-button"
-            type="button"
-            class="secondary-button">
+            type="button">
           Contact
         </button>
       </div>
