@@ -8,15 +8,15 @@ body {
 .page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 24px 12px;
+  padding: 40px 12px 24px;
 
   display: flex;
   flex-direction: column;
 
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
 
-  gap: 24px;
+  gap: 14px;
 }
 
 .hidden {
@@ -933,14 +933,19 @@ button:disabled {
 }
 
 @media (max-width: 600px) {
+  .page {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
   .game-view {
-    width: min(94vw, 560px);
-    gap: 10px;
+    width: min(96vw, 560px);
+    gap: 8px;
   }
 
   .game-bar {
     align-items: flex-start;
-    gap: 8px;
+    gap: 6px;
   }
 
   .game-bar-actions {
