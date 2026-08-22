@@ -35,62 +35,72 @@ import {
 document.querySelector("#app").innerHTML = `
   <div class="page">
 
-    <section id="home-view"
-        class="screen-panel home-panel">
-      <h1>Elixir Chess</h1>
-      <p class="byline">Made by Karthik Kashyap</p>
+    <div id="home-view"
+        class="home-wrapper">
+      <section class="screen-panel home-panel">
+        <h1>Elixir Chess</h1>
+        <p class="byline">Made by Karthik Kashyap</p>
 
-      <div class="actions home-actions">
-        <button id="create-game"
-            type="button">
-          Create Game
-        </button>
+        <div class="actions home-actions">
+          <button id="create-game"
+              type="button">
+            Create Game
+          </button>
 
-        <button id="join-game-home"
-            type="button">
-          Join Game
-        </button>
+          <button id="join-game-home"
+              type="button">
+            Join Game
+          </button>
 
-        <button id="join-existing-home"
-            type="button">
-          Join Existing Room
-        </button>
+          <button id="join-existing-home"
+              type="button">
+            Join Existing Room
+          </button>
 
-        <button id="rules-button"
-            type="button">
-          Rules
-        </button>
+          <button id="rules-button"
+              type="button">
+            Rules
+          </button>
 
-        <button id="contact-button"
-            type="button">
-          Contact
-        </button>
-      </div>
-
-      <form id="existing-room-form"
-          class="room-entry hidden">
-        <label for="existing-room-input">Room number</label>
-
-        <div class="room-entry-row">
-          <input id="existing-room-input"
-              name="room"
-              autocomplete="off"
-              inputmode="text"
-              placeholder="Enter room number" />
-
-          <button type="submit">Enter</button>
+          <button id="contact-button"
+              type="button">
+            Contact
+          </button>
         </div>
 
-        <p id="existing-room-message"
-            class="form-message"></p>
-      </form>
+        <form id="existing-room-form"
+            class="room-entry hidden">
+          <label for="existing-room-input">Room number</label>
 
-      <div id="contact-panel"
-          class="info-panel hidden">
-        <h2>Contact</h2>
-        <p>This game is vibe coded and can hence have a lot of bugs. If you find any or if you would like to give any suggestions, feel free to mail me at <a href="mailto:elixirchess@karthikkashyap.com">elixirchess@karthikkashyap.com</a>.</p>
-      </div>
-    </section>
+          <div class="room-entry-row">
+            <input id="existing-room-input"
+                name="room"
+                autocomplete="off"
+                inputmode="text"
+                placeholder="Enter room number" />
+
+            <button type="submit">Enter</button>
+          </div>
+
+          <p id="existing-room-message"
+              class="form-message"></p>
+        </form>
+
+        <div id="contact-panel"
+            class="info-panel hidden">
+          <h2>Contact</h2>
+          <p>This game is vibe coded and can hence have a lot of bugs. If you find any or if you would like to give any suggestions, feel free to mail me at <a href="mailto:elixirchess@karthikkashyap.com">elixirchess@karthikkashyap.com</a>.</p>
+        </div>
+      </section>
+
+      <footer class="home-screen-footer">
+        <button id="changelog-button"
+            type="button"
+            class="changelog-link-button">
+          Changelog
+        </button>
+      </footer>
+    </div>
 
     <section id="rules-view"
         class="screen-panel rules-page hidden">
@@ -143,6 +153,60 @@ document.querySelector("#app").innerHTML = `
       <div class="rules-section">
         <h2>Draws and Resignation</h2>
         <p>A player may resign to end the game immediately. A player may also offer a draw; the game ends as a draw only if the opponent accepts it.</p>
+      </div>
+    </section>
+
+    <section id="changelog-view"
+        class="screen-panel rules-page hidden">
+      <div class="rules-header">
+        <div>
+          <h1>Changelog</h1>
+          <p class="byline">Updates & patch notes</p>
+        </div>
+
+        <button id="changelog-home-button"
+            type="button"
+            class="secondary-button compact-button">
+          Home
+        </button>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>v1.2.0</h2>
+          <span class="changelog-date">Latest Update</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>UI Symmetry & HUD:</strong> Integrated symmetrical White and Black player HUDs combining digital blitz clocks, Elixir counters, and capture scores above a centered board.</li>
+          <li><strong>Horizontal Move Ribbon:</strong> Converted move history into a compact horizontal ticker with smooth scrolling and dedicated chevron scroll buttons.</li>
+          <li><strong>Game Over Modal:</strong> Replaced static game over block with a modal popup highlighting the winner, outcome reason, and a "Continue" button to inspect the finished board.</li>
+          <li><strong>Home Screen Refresh:</strong> Unified gold styling for action buttons and streamlined contact channel.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>v1.1.0</h2>
+          <span class="changelog-date">Multiplayer & Quality of Life</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Real-time Matchmaking:</strong> Added matchmaking queue and custom room code joining powered by Cloudflare Durable Objects.</li>
+          <li><strong>Authoritative Clocks:</strong> Synced 15-minute blitz clocks with DO alarms and timeout detection.</li>
+          <li><strong>Draws & Resignations:</strong> Interactive draw offers and resignation confirmation flow.</li>
+          <li><strong>Audio Effects:</strong> Added sound feedback for normal moves, captures, victory, and game over.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>v1.0.0</h2>
+          <span class="changelog-date">Initial Release</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Elixir Economy:</strong> Introduced variant rules with 3 starting Elixir and +1 Elixir per standard move.</li>
+          <li><strong>Reserve Piece Summoning:</strong> Ability to spend Elixir to place reserve Queens, Rooks, Bishops, Knights, and Pawns onto ranks 1–2 (White) and 7–8 (Black).</li>
+          <li><strong>Material Score Tracking:</strong> Real-time capture score tallying.</li>
+        </ul>
       </div>
     </section>
 
@@ -325,6 +389,9 @@ const lobbyView =
 
 const rulesView =
   document.getElementById("rules-view");
+
+const changelogView =
+  document.getElementById("changelog-view");
 
 const gameView =
   document.getElementById("game-view");
@@ -510,6 +577,20 @@ document
     goHome
   );
 
+document
+  .getElementById("changelog-button")
+  ?.addEventListener(
+    "click",
+    goToChangelog
+  );
+
+document
+  .getElementById("changelog-home-button")
+  ?.addEventListener(
+    "click",
+    goHome
+  );
+
 offerDrawButton.addEventListener(
   "click",
   offerDraw
@@ -582,6 +663,11 @@ function goHome() {
 function goToRules() {
   window.location.href =
     `${window.location.pathname}?rules=1`;
+}
+
+function goToChangelog() {
+  window.location.href =
+    `${window.location.pathname}?changelog=1`;
 }
 
 async function createGame() {
@@ -752,6 +838,11 @@ function renderApp() {
       window.location.search
     ).has("rules");
 
+  const showingChangelog =
+    new URLSearchParams(
+      window.location.search
+    ).has("changelog");
+
   const hasRoom =
     Boolean(appState.roomId);
 
@@ -763,7 +854,7 @@ function renderApp() {
 
   homeView.classList.toggle(
     "hidden",
-    showingRules || hasRoom
+    showingRules || showingChangelog || hasRoom
   );
 
   rulesView.classList.toggle(
@@ -771,17 +862,22 @@ function renderApp() {
     !showingRules
   );
 
+  changelogView.classList.toggle(
+    "hidden",
+    !showingChangelog
+  );
+
   lobbyView.classList.toggle(
     "hidden",
-    showingRules || !hasRoom || gameReady
+    showingRules || showingChangelog || !hasRoom || gameReady
   );
 
   gameView.classList.toggle(
     "hidden",
-    showingRules || !hasRoom || !gameReady
+    showingRules || showingChangelog || !hasRoom || !gameReady
   );
 
-  if (showingRules || !hasRoom) {
+  if (showingRules || showingChangelog || !hasRoom) {
     return;
   }
 
