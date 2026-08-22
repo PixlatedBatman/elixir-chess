@@ -252,54 +252,86 @@ button:disabled {
 }
 
 .game-view {
+  width: min(94vw, 560px);
+  margin: 0 auto;
+
   display: flex;
   flex-direction: column;
   align-items: center;
 
-  gap: 18px;
+  gap: 14px;
 }
 
-.elixir-panel,
+.players-panel {
+  width: 100%;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.player-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+  padding: 10px 14px;
+
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.player-hud.mine {
+  border-color: #f0d9b5;
+  box-shadow: 0 0 8px rgba(240, 217, 181, 0.2);
+}
+
+.player-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.player-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: #f0d9b5;
+}
+
+.player-stats {
+  font-size: 13px;
+  color: #d5d5d5;
+  white-space: nowrap;
+}
+
+.board-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
 .game-actions {
-  width: 640px;
+  width: 100%;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
   gap: 12px;
+  box-sizing: border-box;
 }
 
-.play-area {
-  width: min(94vw, 920px);
-
-  display: grid;
-  grid-template-columns: minmax(0, 640px) 240px;
-  align-items: start;
-
-  gap: 18px;
-}
-
-.board-wrap {
-  width: 100%;
-}
-
-.elixir-panel {
-  justify-content: space-between;
-}
-
-.elixir-balance {
-  padding: 10px 14px;
-
-  color: #f0d9b5;
-  background: #2a2a2a;
-
-  border: 1px solid #555;
-  border-radius: 8px;
-}
-
-.elixir-balance.mine {
-  border-color: #f0d9b5;
+.game-actions button {
+  flex: 1;
+  max-width: 200px;
 }
 
 .modal-backdrop {
@@ -365,13 +397,14 @@ button:disabled {
 }
 
 .game-bar {
-  width: 640px;
+  width: 100%;
 
   display: flex;
   justify-content: space-between;
   align-items: center;
 
   gap: 16px;
+  box-sizing: border-box;
 
   color: #f4f4f4;
 }
@@ -448,58 +481,77 @@ button:disabled {
   bottom: 3px;
 }
 
-.side-panel {
-  display: grid;
-
-  gap: 14px;
-}
-
-.clock-panel,
-.history-panel {
-  display: grid;
-
-  gap: 10px;
-  padding: 14px;
-
-  background: #2a2a2a;
-
-  border: 1px solid #555;
-  border-radius: 8px;
-}
-
 .clock {
-  padding: 10px 12px;
+  padding: 6px 10px;
 
   color: #f4f4f4;
-  background: #202020;
+  background: #1e1e1e;
 
   border: 1px solid #444;
   border-radius: 6px;
 
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  min-width: 52px;
+  text-align: center;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
 .clock.active {
   color: #111;
   background: #f0d9b5;
   border-color: #f0d9b5;
+  font-weight: 800;
+}
+
+.history-panel {
+  width: 100%;
+
+  display: grid;
+
+  gap: 8px;
+  padding: 12px 16px;
+
+  background: #2a2a2a;
+
+  border: 1px solid #444;
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 
 .history-panel h2 {
   margin: 0;
 
   color: #f0d9b5;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .move-history {
-  max-height: 330px;
-  overflow: auto;
+  max-height: 140px;
+  overflow-y: auto;
 
   display: grid;
 
   gap: 2px;
+  padding-right: 4px;
+}
+
+.move-history::-webkit-scrollbar {
+  width: 6px;
+}
+
+.move-history::-webkit-scrollbar-track {
+  background: #202020;
+  border-radius: 3px;
+}
+
+.move-history::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
 }
 
 .history-row {
@@ -545,13 +597,17 @@ button:disabled {
 
   gap: 16px;
 
-  padding: 16px;
+  padding: 12px 16px;
 
   background: #2a2a2a;
 
+  border: 1px solid #3a3a3a;
   border-radius: 12px;
 
   touch-action: none;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .reserve-item {
@@ -654,43 +710,72 @@ button:disabled {
 }
 
 @media (max-width: 720px) {
-  .game-bar,
-  .elixir-panel,
-  .game-actions,
-  .play-area,
-  .board {
-    width: min(94vw, 640px);
-  }
-
-  .game-bar,
-  .game-bar-actions,
   .rules-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .actions,
+  .room-entry-row,
+  .modal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 600px) {
+  .game-view {
+    width: min(94vw, 560px);
+    gap: 10px;
+  }
+
+  .game-bar {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .game-bar-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .status {
     text-align: left;
   }
 
-  .actions,
-  .room-entry-row,
-  .elixir-panel,
-  .game-actions,
-  .modal-actions {
-    align-items: stretch;
-    flex-direction: column;
+  .players-panel {
+    gap: 8px;
   }
 
-  .play-area {
-    grid-template-columns: 1fr;
+  .player-hud {
+    padding: 8px 10px;
+    gap: 6px;
   }
 
-  .side-panel {
-    width: 100%;
+  .player-label {
+    font-size: 13px;
+  }
+
+  .player-stats {
+    font-size: 11px;
+  }
+
+  .clock {
+    padding: 4px 6px;
+    font-size: 15px;
+    min-width: 44px;
+  }
+
+  .reserve {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .reserve-cost {
+    font-size: 10px;
   }
 
   .move-history {
-    max-height: 180px;
+    max-height: 110px;
   }
 }

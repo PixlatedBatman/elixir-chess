@@ -197,36 +197,35 @@ document.querySelector("#app").innerHTML = `
         </div>
       </div>
 
-      <div class="elixir-panel">
-        <div id="white-elixir"
-            class="elixir-balance"></div>
+      <div class="players-panel">
+        <div id="white-player-hud"
+            class="player-hud">
+          <div class="player-details">
+            <span class="player-label">White</span>
+            <span id="white-elixir"
+                class="player-stats"></span>
+          </div>
 
-        <div id="black-elixir"
-            class="elixir-balance"></div>
-      </div>
-
-      <div class="play-area">
-        <div class="board-wrap">
-          <div id="board"
-              class="board"></div>
+          <div id="white-clock"
+              class="clock"></div>
         </div>
 
-        <aside class="side-panel">
-          <div class="clock-panel">
-            <div id="black-clock"
-                class="clock"></div>
-
-            <div id="white-clock"
-                class="clock"></div>
+        <div id="black-player-hud"
+            class="player-hud">
+          <div class="player-details">
+            <span class="player-label">Black</span>
+            <span id="black-elixir"
+                class="player-stats"></span>
           </div>
 
-          <div class="history-panel">
-            <h2>Moves</h2>
+          <div id="black-clock"
+              class="clock"></div>
+        </div>
+      </div>
 
-            <div id="move-history"
-                class="move-history"></div>
-          </div>
-        </aside>
+      <div class="board-wrap">
+        <div id="board"
+            class="board"></div>
       </div>
 
       <div class="game-actions">
@@ -274,6 +273,13 @@ document.querySelector("#app").innerHTML = `
         <h2>Game Over</h2>
         <p id="game-over-text"></p>
       </div>
+
+      <div class="history-panel">
+        <h2>Moves</h2>
+
+        <div id="move-history"
+            class="move-history"></div>
+      </div>
     </section>
 
   </div>
@@ -317,6 +323,12 @@ const whitePlayerElement =
 
 const blackPlayerElement =
   document.getElementById("black-player");
+
+const whitePlayerHudElement =
+  document.getElementById("white-player-hud");
+
+const blackPlayerHudElement =
+  document.getElementById("black-player-hud");
 
 const whiteElixirElement =
   document.getElementById("white-elixir");
@@ -771,17 +783,17 @@ function renderGame() {
 
 function renderElixir() {
   whiteElixirElement.textContent =
-    `White Elixir: ${appState.elixir?.w ?? 0} | Score: ${appState.score?.w ?? 0}`;
+    `Elixir: ${appState.elixir?.w ?? 0} | Score: ${appState.score?.w ?? 0}`;
 
   blackElixirElement.textContent =
-    `Black Elixir: ${appState.elixir?.b ?? 0} | Score: ${appState.score?.b ?? 0}`;
+    `Elixir: ${appState.elixir?.b ?? 0} | Score: ${appState.score?.b ?? 0}`;
 
-  whiteElixirElement.classList.toggle(
+  whitePlayerHudElement.classList.toggle(
     "mine",
     appState.playerColor === "w"
   );
 
-  blackElixirElement.classList.toggle(
+  blackPlayerHudElement.classList.toggle(
     "mine",
     appState.playerColor === "b"
   );
@@ -836,10 +848,10 @@ function renderClocks() {
     getDisplayClocks();
 
   whiteClockElement.textContent =
-    `White ${formatClock(clocks.w)}`;
+    formatClock(clocks.w);
 
   blackClockElement.textContent =
-    `Black ${formatClock(clocks.b)}`;
+    formatClock(clocks.b);
 
   whiteClockElement.classList.toggle(
     "active",
@@ -943,6 +955,9 @@ function renderMoveHistory() {
         </div>
       `)
       .join("");
+
+  moveHistoryElement.scrollTop =
+    moveHistoryElement.scrollHeight;
 }
 
 function renderGameOver() {
