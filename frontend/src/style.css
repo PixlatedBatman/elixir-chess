@@ -7,6 +7,8 @@ body {
 
 .page {
   min-height: 100vh;
+  box-sizing: border-box;
+  padding: 24px 12px;
 
   display: flex;
   flex-direction: column;
@@ -22,7 +24,8 @@ body {
 }
 
 .screen-panel {
-  width: min(92vw, 420px);
+  width: min(92vw, 460px);
+  margin: auto 0;
 
   display: flex;
   flex-direction: column;
@@ -31,6 +34,7 @@ body {
   gap: 20px;
 
   padding: 28px;
+  box-sizing: border-box;
 
   background: #2a2a2a;
   border: 1px solid #3a3a3a;
@@ -49,6 +53,12 @@ body {
 
   max-height: calc(100vh - 48px);
   overflow: auto;
+}
+
+.changelog-page {
+  width: min(92vw, 720px);
+  max-height: none;
+  overflow: visible;
 }
 
 .rules-header {
@@ -142,11 +152,12 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: calc(100vh - 48px);
   width: 100%;
   position: relative;
   box-sizing: border-box;
-  padding: 24px 0 68px;
+  padding: 0 0 68px;
+  margin: auto 0;
 }
 
 .home-screen-footer {
@@ -196,6 +207,8 @@ body {
 
 .home-actions button {
   flex: 1 1 150px;
+  white-space: nowrap;
+  padding: 0 12px;
 }
 
 .room-entry {

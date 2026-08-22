@@ -157,7 +157,7 @@ document.querySelector("#app").innerHTML = `
     </section>
 
     <section id="changelog-view"
-        class="screen-panel rules-page hidden">
+        class="screen-panel changelog-page hidden">
       <div class="rules-header">
         <div>
           <h1>Changelog</h1>
