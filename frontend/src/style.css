@@ -373,27 +373,46 @@ button:disabled {
   flex: 1;
 }
 
-.game-over {
-  width: min(92vw, 420px);
+.game-over-dialog {
+  width: min(92vw, 380px);
 
-  padding: 20px;
-
+  display: grid;
+  gap: 16px;
+  padding: 24px;
   text-align: center;
 
+  color: #f4f4f4;
   background: #2a2a2a;
-  border: 1px solid #666;
-  border-radius: 8px;
+
+  border: 1px solid #555;
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
 }
 
-.game-over h2,
-.game-over p {
+.game-over-dialog h2 {
   margin: 0;
+  color: #f0d9b5;
+  font-size: 24px;
+  letter-spacing: 0.5px;
 }
 
-.game-over p {
-  margin-top: 8px;
+.game-over-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-  color: #f0d9b5;
+.game-over-winner {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.game-over-reason {
+  margin: 0;
+  font-size: 14px;
+  color: #cfcfcf;
 }
 
 .game-bar {

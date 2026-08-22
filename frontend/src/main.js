@@ -269,9 +269,27 @@ document.querySelector("#app").innerHTML = `
           class="reserve"></div>
 
       <div id="game-over"
-          class="game-over hidden">
-        <h2>Game Over</h2>
-        <p id="game-over-text"></p>
+          class="modal-backdrop hidden">
+        <div class="game-over-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="game-over-title">
+          <h2 id="game-over-title">Game Over</h2>
+
+          <div class="game-over-content">
+            <p id="game-over-winner"
+                class="game-over-winner"></p>
+            <p id="game-over-reason"
+                class="game-over-reason"></p>
+          </div>
+
+          <div class="modal-actions">
+            <button id="game-over-continue"
+                type="button">
+              Continue
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="history-panel">
@@ -390,8 +408,17 @@ const declineDrawButton =
 const gameOverElement =
   document.getElementById("game-over");
 
-const gameOverTextElement =
-  document.getElementById("game-over-text");
+const gameOverWinnerElement =
+  document.getElementById("game-over-winner");
+
+const gameOverReasonElement =
+  document.getElementById("game-over-reason");
+
+const gameOverContinueButton =
+  document.getElementById("game-over-continue");
+
+let gameOverDismissed = false;
+let lastSeenGameOverKey = null;
 
 const existingRoomForm =
   document.getElementById("existing-room-form");
@@ -529,6 +556,14 @@ historyScrollRightButton.addEventListener(
       left: 120,
       behavior: "smooth",
     });
+  }
+);
+
+gameOverContinueButton.addEventListener(
+  "click",
+  () => {
+    gameOverDismissed = true;
+    gameOverElement.classList.add("hidden");
   }
 );
 
@@ -1005,24 +1040,48 @@ function renderMoveHistory() {
 }
 
 function renderGameOver() {
-  gameOverElement.classList.toggle(
-    "hidden",
-    !appState.gameOver
-  );
-
   if (!appState.gameOver) {
+    gameOverDismissed = false;
+    lastSeenGameOverKey = null;
+    gameOverElement.classList.add("hidden");
     return;
   }
 
-  gameOverTextElement.textContent =
-    getGameOverText(
-      appState.gameOver
-    );
+  const currentKey =
+    `${appState.gameOver.reason}:${appState.gameOver.winner}`;
+
+  if (lastSeenGameOverKey !== currentKey) {
+    lastSeenGameOverKey = currentKey;
+    gameOverDismissed = false;
+  }
+
+  gameOverElement.classList.toggle(
+    "hidden",
+    gameOverDismissed
+  );
+
+  if (gameOverDismissed) {
+    return;
+  }
+
+  const { winnerText, reasonText } =
+    getGameOverDetails(appState.gameOver);
+
+  if (gameOverWinnerElement) {
+    gameOverWinnerElement.textContent = winnerText;
+  }
+
+  if (gameOverReasonElement) {
+    gameOverReasonElement.textContent = reasonText;
+  }
 }
 
-function getGameOverText(gameOver) {
+function getGameOverDetails(gameOver) {
   if (gameOver.reason === "draw") {
-    return "The game ended in a draw.";
+    return {
+      winnerText: "Draw",
+      reasonText: "The game ended in a draw.",
+    };
   }
 
   const winner =
@@ -1030,13 +1089,15 @@ function getGameOverText(gameOver) {
       ? "White"
       : "Black";
 
+  let reason = "by checkmate";
   if (gameOver.reason === "resignation") {
-    return `${winner} won by resignation.`;
+    reason = "by resignation";
+  } else if (gameOver.reason === "timeout") {
+    reason = "on time";
   }
 
-  if (gameOver.reason === "timeout") {
-    return `${winner} won on time.`;
-  }
-
-  return `${winner} won by checkmate.`;
+  return {
+    winnerText: `${winner} Won!`,
+    reasonText: `Won ${reason}.`,
+  };
 }
