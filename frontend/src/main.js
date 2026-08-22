@@ -161,7 +161,7 @@ document.querySelector("#app").innerHTML = `
       <div class="rules-header">
         <div>
           <h1>Changelog</h1>
-          <p class="byline">Updates & patch notes</p>
+          <p class="byline">Project updates & release notes</p>
         </div>
 
         <button id="changelog-home-button"
@@ -173,39 +173,78 @@ document.querySelector("#app").innerHTML = `
 
       <div class="changelog-entry">
         <div class="changelog-entry-header">
-          <h2>v1.2.0</h2>
-          <span class="changelog-date">Latest Update</span>
+          <h2>Update v1.6</h2>
+          <span class="changelog-date">August 22, 2026</span>
         </div>
         <ul class="changelog-list">
-          <li><strong>UI Symmetry & HUD:</strong> Integrated symmetrical White and Black player HUDs combining digital blitz clocks, Elixir counters, and capture scores above a centered board.</li>
-          <li><strong>Horizontal Move Ribbon:</strong> Converted move history into a compact horizontal ticker with smooth scrolling and dedicated chevron scroll buttons.</li>
-          <li><strong>Game Over Modal:</strong> Replaced static game over block with a modal popup highlighting the winner, outcome reason, and a "Continue" button to inspect the finished board.</li>
-          <li><strong>Home Screen Refresh:</strong> Unified gold styling for action buttons and streamlined contact channel.</li>
+          <li><strong>UI Symmetry & Player HUDs:</strong> Symmetrical player HUD cards combining 15-minute blitz clocks, Elixir counters, and capture scores above a centered board.</li>
+          <li><strong>Horizontal Move History:</strong> Horizontal scrolling move ribbon with custom chevron scroll buttons and hidden scrollbar.</li>
+          <li><strong>Interactive Modals:</strong> Modal popup dialogs for Draw offers and Game Over (displaying winner, reason, and a continue button to review the board).</li>
+          <li><strong>Home Screen & Changelog:</strong> Highlighted all home action buttons with gold theme and added a dedicated Changelog page accessible from the bottom of the screen.</li>
+          <li><strong>Balance, Contact & License:</strong> Queen piece value updated to 9, board rank/file coordinates added, dedicated contact email at <code>elixirchess@karthikkashyap.com</code>, and added MIT license documentation.</li>
         </ul>
       </div>
 
       <div class="changelog-entry">
         <div class="changelog-entry-header">
-          <h2>v1.1.0</h2>
-          <span class="changelog-date">Multiplayer & Quality of Life</span>
+          <h2>Update v1.5</h2>
+          <span class="changelog-date">August 18, 2026</span>
         </div>
         <ul class="changelog-list">
-          <li><strong>Real-time Matchmaking:</strong> Added matchmaking queue and custom room code joining powered by Cloudflare Durable Objects.</li>
-          <li><strong>Authoritative Clocks:</strong> Synced 15-minute blitz clocks with DO alarms and timeout detection.</li>
-          <li><strong>Draws & Resignations:</strong> Interactive draw offers and resignation confirmation flow.</li>
-          <li><strong>Audio Effects:</strong> Added sound feedback for normal moves, captures, victory, and game over.</li>
+          <li><strong>Sound Effects:</strong> Added dedicated audio module and sound effects for normal moves, captures, checkmate/timeout, and victory.</li>
+          <li><strong>Rules Subpage:</strong> Added dedicated rules subpage with detailed variant rules, improved piece capture interactions, and removed mobile image drag popups.</li>
         </ul>
       </div>
 
       <div class="changelog-entry">
         <div class="changelog-entry-header">
-          <h2>v1.0.0</h2>
-          <span class="changelog-date">Initial Release</span>
+          <h2>Update v1.4</h2>
+          <span class="changelog-date">June 29, 2026</span>
         </div>
         <ul class="changelog-list">
-          <li><strong>Elixir Economy:</strong> Introduced variant rules with 3 starting Elixir and +1 Elixir per standard move.</li>
-          <li><strong>Reserve Piece Summoning:</strong> Ability to spend Elixir to place reserve Queens, Rooks, Bishops, Knights, and Pawns onto ranks 1–2 (White) and 7–8 (Black).</li>
-          <li><strong>Material Score Tracking:</strong> Real-time capture score tallying.</li>
+          <li><strong>Matchmaking & Home Info:</strong> Added home page info panels, online matchmaking system with room code lobbies, and web app favicon metadata.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.3</h2>
+          <span class="changelog-date">May 25, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Score & Navigation:</strong> Added home navigation button and live material capture score tracking on the game page.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.2</h2>
+          <span class="changelog-date">May 25, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Mobile Support:</strong> Added touch gesture support and responsive layout scaling for mobile screens.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.1</h2>
+          <span class="changelog-date">May 24, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Elixir System & Game Actions:</strong> Added resign and draw actions, initial functional implementation of the Elixir resource system, and red square visual indicators for attacks and check.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.0</h2>
+          <span class="changelog-date">May 13, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Multiplayer Foundation:</strong> Added WebSocket multiplayer support with Cloudflare Workers backend and custom domain configuration.</li>
+          <li><strong>Reserve Mechanics:</strong> Implemented reserve piece deployment system (Queens, Rooks, Bishops, Knights, Pawns) and board orientation inversion for Black.</li>
+          <li><strong>Chess Engine:</strong> Working chess rule validation model and initial variant architecture.</li>
         </ul>
       </div>
     </section>
