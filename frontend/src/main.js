@@ -173,13 +173,24 @@ document.querySelector("#app").innerHTML = `
 
       <div class="changelog-entry">
         <div class="changelog-entry-header">
+          <h2>Update v1.7</h2>
+          <span class="changelog-date">August 22, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Resignation Confirmation Popup:</strong> Replaced native browser confirmation dialog with an in-game modal popup featuring custom Resign and Cancel actions.</li>
+          <li><strong>Mobile Viewport Fit:</strong> Optimized mobile vertical spacing and scaling so the board, HUDs, action buttons, and move history ribbon fit seamlessly without cutting off.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
           <h2>Update v1.6</h2>
           <span class="changelog-date">August 22, 2026</span>
         </div>
         <ul class="changelog-list">
           <li><strong>UI Symmetry & Player HUDs:</strong> Symmetrical player HUD cards combining 15-minute blitz clocks, Elixir counters, and capture scores above a centered board.</li>
           <li><strong>Horizontal Move History:</strong> Horizontal scrolling move ribbon with custom chevron scroll buttons and hidden scrollbar.</li>
-          <li><strong>Interactive Modals:</strong> Modal popup dialogs for Resignation confirmation, Draw offers, and Game Over (displaying winner, reason, and a continue button to review the board).</li>
+          <li><strong>Game Over & Draw Popups:</strong> Modal popup dialogs for Draw offers and Game Over (displaying winner, reason, and a continue button to review the board).</li>
           <li><strong>Home Screen & Changelog:</strong> Highlighted all home action buttons with gold theme and added a dedicated Changelog page accessible from the bottom of the screen.</li>
           <li><strong>Balance, Contact & License:</strong> Queen piece value updated to 9, board rank/file coordinates added, dedicated contact email at <code>elixirchess@karthikkashyap.com</code>, and added MIT license documentation.</li>
         </ul>
