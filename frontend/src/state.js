@@ -62,4 +62,5 @@ export const appState = {
   premove: null,
   hasPlayedLowTimeWarning: false,
   selectedHistoryIndex: null,
+  rematchOffer: null,
 };

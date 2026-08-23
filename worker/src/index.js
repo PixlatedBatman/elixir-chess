@@ -352,6 +352,13 @@ export class GameRoom {
       );
     }
 
+    if (action === "rematch") {
+      return this.handleRematch(
+        body,
+        request
+      );
+    }
+
     return json(
       {
         error: "Unknown room action",
@@ -913,6 +920,102 @@ export class GameRoom {
     );
   }
 
+  async handleRematch(
+    body,
+    request
+  ) {
+    const state =
+      await this.getState();
+
+    const role =
+      getRole(
+        state,
+        body.playerId
+      );
+
+    if (
+      role !== "w" &&
+      role !== "b"
+    ) {
+      return json(
+        {
+          error: "Only players can request a rematch",
+        },
+        403,
+        request
+      );
+    }
+
+    if (!state.gameOver) {
+      return json(
+        {
+          error: "Game is still in progress",
+        },
+        400,
+        request
+      );
+    }
+
+    const opponentRole = oppositeColor(role);
+    const opponentPresent = Boolean(state.players[opponentRole]);
+
+    if (!opponentPresent || state.rematchOffer === opponentRole) {
+      const oldW = state.players.w;
+      const oldB = state.players.b;
+
+      state.players.w = oldB;
+      state.players.b = oldW;
+
+      state.fen = new Chess().fen();
+      state.gameOver = null;
+      state.drawOffer = null;
+      state.rematchOffer = null;
+      state.lastMove = null;
+      state.moveHistory = [];
+      state.elixir = {
+        w: INITIAL_ELIXIR,
+        b: INITIAL_ELIXIR,
+      };
+      state.score = {
+        w: 0,
+        b: 0,
+      };
+      state.clocks = {
+        w: INITIAL_CLOCK_MS,
+        b: INITIAL_CLOCK_MS,
+      };
+      startClock(state);
+
+      await this.saveState(state);
+      await this.setClockAlarm(state);
+
+      this.broadcast(state);
+
+      return json(
+        serializeState(
+          state,
+          getRole(state, body.playerId)
+        ),
+        200,
+        request
+      );
+    }
+
+    state.rematchOffer = role;
+
+    await this.saveState(state);
+    this.broadcast(state);
+
+    return json(
+      serializeState(
+        state,
+        role
+      ),
+      200,
+      request
+    );
+  }
+
   async handleWebSocket(
     request,
     url
@@ -1001,6 +1104,7 @@ export class GameRoom {
         "lastMove",
         "gameOver",
         "drawOffer",
+        "rematchOffer",
         "elixir",
         "score",
         "moveHistory",
@@ -1027,6 +1131,9 @@ export class GameRoom {
         null,
       drawOffer:
         stored.get("drawOffer") ||
+        null,
+      rematchOffer:
+        stored.get("rematchOffer") ||
         null,
       elixir:
         normalizeElixir(
@@ -1058,6 +1165,7 @@ export class GameRoom {
       lastMove: state.lastMove,
       gameOver: state.gameOver,
       drawOffer: state.drawOffer,
+      rematchOffer: state.rematchOffer || null,
       elixir: normalizeElixir(state.elixir),
       score: normalizeScore(state.score),
       moveHistory:
@@ -1419,6 +1527,7 @@ function serializeState(
       player2: Boolean(state.players.player2),
     },
     drawOffer: state.drawOffer,
+    rematchOffer: state.rematchOffer || null,
     gameOver: state.gameOver,
     elixir: normalizeElixir(state.elixir),
     score: normalizeScore(state.score),

@@ -13,6 +13,7 @@ import {
   joinRoom,
   submitDraw,
   submitResign,
+  submitRematch,
   subscribeToRoom,
 } from "./api";
 
@@ -386,6 +387,12 @@ document.querySelector("#app").innerHTML = `
             class="danger-button">
           Resign
         </button>
+
+        <button id="play-again"
+            type="button"
+            class="play-again-btn hidden">
+          Play Again
+        </button>
       </div>
 
       <div id="draw-offer"
@@ -566,6 +573,9 @@ const offerDrawButton =
 
 const resignButton =
   document.getElementById("resign-game");
+
+const playAgainButton =
+  document.getElementById("play-again");
 
 const drawOfferElement =
   document.getElementById("draw-offer");
@@ -754,6 +764,16 @@ acceptDrawButton.addEventListener(
 declineDrawButton.addEventListener(
   "click",
   () => respondToDraw("decline")
+);
+
+playAgainButton.addEventListener(
+  "click",
+  async () => {
+    playAgainButton.disabled = true;
+    playAgainButton.textContent = "Waiting for Opponent...";
+    await submitRematch();
+    renderApp();
+  }
 );
 
 homeButton.addEventListener(
@@ -1205,12 +1225,43 @@ function renderDrawControls() {
   const gameOver =
     Boolean(appState.gameOver);
 
-  offerDrawButton.disabled =
-    !isPlayer || gameOver ||
-    appState.drawOffer === appState.playerColor;
+  if (gameOver) {
+    offerDrawButton.classList.add("hidden");
+    resignButton.classList.add("hidden");
 
-  resignButton.disabled =
-    !isPlayer || gameOver;
+    if (isPlayer) {
+      playAgainButton.classList.remove("hidden");
+      const opponentRole = appState.playerColor === "w" ? "b" : "w";
+
+      if (appState.rematchOffer === appState.playerColor) {
+        playAgainButton.textContent = "Waiting for Opponent...";
+        playAgainButton.disabled = true;
+      } else if (appState.rematchOffer === opponentRole) {
+        playAgainButton.textContent = "Accept Rematch";
+        playAgainButton.disabled = false;
+      } else {
+        playAgainButton.textContent = "Play Again";
+        playAgainButton.disabled = false;
+      }
+    } else {
+      playAgainButton.classList.add("hidden");
+    }
+  } else {
+    playAgainButton.classList.add("hidden");
+
+    if (isPlayer) {
+      offerDrawButton.classList.remove("hidden");
+      resignButton.classList.remove("hidden");
+
+      offerDrawButton.disabled =
+        appState.drawOffer === appState.playerColor;
+
+      resignButton.disabled = false;
+    } else {
+      offerDrawButton.classList.add("hidden");
+      resignButton.classList.add("hidden");
+    }
+  }
 
   const hasIncomingOffer =
     isPlayer &&

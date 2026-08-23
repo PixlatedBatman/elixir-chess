@@ -275,6 +275,13 @@ export async function submitDraw(
   );
 }
 
+export async function submitRematch() {
+  return postRoomAction(
+    "rematch",
+    {}
+  );
+}
+
 function applyServerState(payload) {
   const previousState = {
     gameOver:
@@ -295,6 +302,8 @@ function applyServerState(payload) {
     payload.players;
   appState.drawOffer =
     payload.drawOffer || null;
+  appState.rematchOffer =
+    payload.rematchOffer || null;
   appState.gameOver =
     payload.gameOver || null;
   appState.elixir =
@@ -342,6 +351,10 @@ function applyServerState(payload) {
   appState.hasReceivedServerState = true;
 
   if (payload.gameOver) {
+    appState.premove = null;
+  } else if (previousState.gameOver && !payload.gameOver) {
+    appState.selectedHistoryIndex = null;
+    appState.hasPlayedLowTimeWarning = false;
     appState.premove = null;
   }
 

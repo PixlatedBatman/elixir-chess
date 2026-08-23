@@ -477,6 +477,11 @@ button:disabled {
   max-width: 200px;
 }
 
+.play-again-btn {
+  max-width: 240px !important;
+  font-weight: 700;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
