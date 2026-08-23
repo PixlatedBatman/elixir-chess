@@ -410,7 +410,7 @@ function getGameOverSoundKey(gameOver) {
   ].join(":");
 }
 
-function getMoveSoundKey(
+export function getMoveSoundKey(
   lastMove,
   score
 ) {

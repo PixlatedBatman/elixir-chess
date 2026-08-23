@@ -26,6 +26,7 @@ import {
 
 import {
   initializeInteractions,
+  setOnRerenderCallback,
 } from "./interaction";
 
 import {
@@ -603,6 +604,10 @@ renderReserve(
 initializeInteractions(
   boardElement,
   reserveElement
+);
+
+setOnRerenderCallback(
+  renderGame
 );
 
 initializeSound();

@@ -3,6 +3,7 @@ import {
 } from "./state";
 
 import {
+  setFen,
   getTurn,
   tryMove,
   getLegalMoves,
@@ -24,11 +25,20 @@ import {
 import {
   submitMove,
   submitReserve,
+  getMoveSoundKey,
 } from "./api";
 
 import {
   playMoveSound,
 } from "./sound";
+
+const PIECE_VALUES = {
+  p: 1,
+  b: 3,
+  n: 3,
+  r: 5,
+  q: 9,
+};
 
 const RESERVE_COSTS = {
   P: 1,
@@ -37,6 +47,14 @@ const RESERVE_COSTS = {
   R: 5,
   Q: 9,
 };
+
+let onRerenderCallback = null;
+
+export function setOnRerenderCallback(
+  callback
+) {
+  onRerenderCallback = callback;
+}
 
 // ---------------- DRAG STATE ----------------
 
@@ -455,47 +473,139 @@ function canControlColor(color) {
 }
 
 async function commitMove(from, to) {
-  if (appState.online) {
-    return submitMove(
-      from,
-      to
-    );
-  }
-
   const move =
     tryMove(
       from,
       to
     );
 
-  if (move) {
-    appState.fen = getFen();
-    appState.lastMove = {
-      type: "move",
-      squares: [
-        from,
-        to,
-      ],
-    };
-
-    playMoveSound(
-      Boolean(move.captured)
-    );
+  if (!move) {
+    return false;
   }
 
-  return Boolean(move);
+  const role =
+    appState.playerColor ||
+    getTurn();
+
+  const isCapture =
+    Boolean(move.captured);
+
+  const rollbackSnapshot = {
+    fen: appState.fen,
+    lastMove: appState.lastMove,
+    elixir: appState.elixir
+      ? { ...appState.elixir }
+      : null,
+    score: appState.score
+      ? { ...appState.score }
+      : null,
+    clockTurn: appState.clockTurn,
+  };
+
+  appState.fen = getFen();
+  appState.lastMove = {
+    type: "move",
+    squares: [
+      from,
+      to,
+    ],
+  };
+
+  if (appState.elixir && role) {
+    appState.elixir = {
+      ...appState.elixir,
+      [role]:
+        (appState.elixir[role] ?? 3) + 1,
+    };
+  }
+
+  if (appState.score && role && move.captured) {
+    appState.score = {
+      ...appState.score,
+      [role]:
+        (appState.score[role] ?? 0) +
+        (PIECE_VALUES[move.captured.toLowerCase()] || 0),
+    };
+  }
+
+  appState.clockTurn = getTurn();
+
+  playMoveSound(isCapture);
+
+  appState.lastSoundKey =
+    getMoveSoundKey(
+      appState.lastMove,
+      appState.score
+    );
+
+  rerender();
+
+  if (!appState.online) {
+    return true;
+  }
+
+  try {
+    const success =
+      await submitMove(
+        from,
+        to
+      );
+
+    if (!success) {
+      rollbackState(rollbackSnapshot);
+      return false;
+    }
+
+    return true;
+  } catch {
+    rollbackState(rollbackSnapshot);
+    return false;
+  }
 }
 
 async function commitReserve(
   pieceCode,
   target
 ) {
-  if (appState.online) {
-    return submitReserve(
+  const role =
+    pieceCode[0];
+
+  const cost =
+    RESERVE_COSTS[pieceCode[1]] ||
+    Number.POSITIVE_INFINITY;
+
+  if (
+    appState.elixir &&
+    (appState.elixir[role] ?? 0) < cost
+  ) {
+    appState.statusMessage =
+      "Not enough Elixir";
+    rerender();
+    return false;
+  }
+
+  const legal =
+    canPlaceReserve(
+      appState.fen,
       pieceCode,
       target
     );
+
+  if (!legal) {
+    return false;
   }
+
+  const rollbackSnapshot = {
+    fen: appState.fen,
+    lastMove: appState.lastMove,
+    elixir: appState.elixir
+      ? { ...appState.elixir }
+      : null,
+    score: appState.score
+      ? { ...appState.score }
+      : null,
+    clockTurn: appState.clockTurn,
+  };
 
   const placed =
     placeReserve(
@@ -503,46 +613,106 @@ async function commitReserve(
       target
     );
 
-  if (placed) {
-    appState.fen = getFen();
-    appState.lastMove = {
-      type: "reserve",
-      squares: [
-        target,
-      ],
-    };
-
-    playMoveSound();
+  if (!placed) {
+    return false;
   }
 
-  return placed;
+  appState.fen = getFen();
+  appState.lastMove = {
+    type: "reserve",
+    squares: [
+      target,
+    ],
+  };
+
+  if (appState.elixir) {
+    appState.elixir = {
+      ...appState.elixir,
+      [role]:
+        (appState.elixir[role] ?? 3) - cost,
+    };
+  }
+
+  appState.clockTurn = getTurn();
+
+  playMoveSound(false);
+
+  appState.lastSoundKey =
+    getMoveSoundKey(
+      appState.lastMove,
+      appState.score
+    );
+
+  rerender();
+
+  if (!appState.online) {
+    return true;
+  }
+
+  try {
+    const success =
+      await submitReserve(
+        pieceCode,
+        target
+      );
+
+    if (!success) {
+      rollbackState(rollbackSnapshot);
+      return false;
+    }
+
+    return true;
+  } catch {
+    rollbackState(rollbackSnapshot);
+    return false;
+  }
+}
+
+function rollbackState(snapshot) {
+  if (!snapshot) {
+    return;
+  }
+
+  appState.fen = snapshot.fen;
+  setFen(snapshot.fen);
+  appState.lastMove = snapshot.lastMove;
+  appState.elixir = snapshot.elixir;
+  appState.score = snapshot.score;
+  appState.clockTurn = snapshot.clockTurn;
+  appState.statusMessage =
+    "Move rejected by server";
+
+  rerender();
 }
 
 function rerender() {
-
   const boardElement =
     document.getElementById("board");
 
-  createBoard(
-    boardElement,
-    appState.fen,
-    appState.draggedFrom,
-    appState.selectedSquare,
-    appState.legalMoves,
-    appState.boardOrientation,
-    appState.lastMove
-  );
+  if (boardElement) {
+    createBoard(
+      boardElement,
+      appState.fen,
+      appState.draggedFrom,
+      appState.selectedSquare,
+      appState.legalMoves,
+      appState.boardOrientation,
+      appState.lastMove
+    );
+  }
 
   const reserveElement =
     document.getElementById("reserve");
 
-  renderReserve(
-    reserveElement,
-    appState.reservePieces,
-    appState.selectedSource,
-    appState.elixir,
-    appState.playerColor
-  );
+  if (reserveElement) {
+    renderReserve(
+      reserveElement,
+      appState.reservePieces,
+      appState.selectedSource,
+      appState.elixir,
+      appState.playerColor
+    );
+  }
 
   const statusElement =
     document.getElementById("status");
@@ -551,6 +721,8 @@ function rerender() {
     statusElement.textContent =
       appState.statusMessage;
   }
+
+  onRerenderCallback?.();
 }
 
 async function handleBoardClick(event) {
