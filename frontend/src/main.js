@@ -2,6 +2,7 @@ import "./style.css";
 
 import {
   getFen,
+  getPositionAtHistoryIndex,
 } from "./game";
 
 import {
@@ -12,6 +13,7 @@ import {
   joinRoom,
   submitDraw,
   submitResign,
+  submitRematch,
   subscribeToRoom,
 } from "./api";
 
@@ -31,6 +33,7 @@ import {
 
 import {
   initializeSound,
+  playLowTimeSound,
 } from "./sound";
 
 document.querySelector("#app").innerHTML = `
@@ -43,19 +46,14 @@ document.querySelector("#app").innerHTML = `
         <p class="byline">Made by Karthik Kashyap</p>
 
         <div class="actions home-actions">
-          <button id="create-game"
+          <button id="play-online-button"
               type="button">
-            Create Game
+            Play Online
           </button>
 
-          <button id="join-game-home"
+          <button id="play-friend-button"
               type="button">
-            Join Game
-          </button>
-
-          <button id="join-existing-home"
-              type="button">
-            Join Existing Room
+            Play with a Friend
           </button>
 
           <button id="rules-button"
@@ -69,23 +67,35 @@ document.querySelector("#app").innerHTML = `
           </button>
         </div>
 
-        <form id="existing-room-form"
-            class="room-entry hidden">
-          <label for="existing-room-input">Room number</label>
+        <div id="friend-panel"
+            class="info-panel friend-panel hidden">
+          <h2>Play with a Friend</h2>
+          <button id="create-private-room-btn"
+              type="button"
+              class="friend-create-btn">
+            Create Private Room
+          </button>
 
-          <div class="room-entry-row">
-            <input id="existing-room-input"
-                name="room"
-                autocomplete="off"
-                inputmode="text"
-                placeholder="Enter room number" />
-
-            <button type="submit">Enter</button>
+          <div class="friend-divider">
+            <span>or enter room code</span>
           </div>
 
-          <p id="existing-room-message"
-              class="form-message"></p>
-        </form>
+          <form id="existing-room-form"
+              class="room-entry friend-room-form">
+            <div class="room-entry-row">
+              <input id="existing-room-input"
+                  name="room"
+                  autocomplete="off"
+                  inputmode="text"
+                  placeholder="Enter room number" />
+
+              <button type="submit">Enter</button>
+            </div>
+
+            <p id="existing-room-message"
+                class="form-message"></p>
+          </form>
+        </div>
 
         <div id="contact-panel"
             class="info-panel hidden">
@@ -158,7 +168,7 @@ document.querySelector("#app").innerHTML = `
 
       <div class="rules-section">
         <h2>Premoves</h2>
-        <p>You can queue a piece move or a reserve piece placement while it is your opponent's turn. Your queued premove will be highlighted in blue and will execute automatically the instant your opponent finishes their turn, provided the move remains legal. If the move is no longer legal or you have insufficient Elixir, the premove is safely cancelled. You can cancel a premove at any time by right-clicking or tapping an empty square.</p>
+        <p>You can queue a piece move or a reserve piece placement while it is your opponent's turn. Pawns may also be premoved to diagonal squares in anticipation of an opponent piece moving there. Your queued premove will be highlighted in blue and will execute automatically the instant your opponent finishes their turn, provided the move remains legal. If the move is no longer legal or you have insufficient Elixir, the premove is safely cancelled. You can cancel a premove at any time by right-clicking or tapping an empty square.</p>
       </div>
     </section>
 
@@ -175,6 +185,21 @@ document.querySelector("#app").innerHTML = `
             class="secondary-button compact-button">
           Home
         </button>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v1.9</h2>
+          <span class="changelog-date">August 24, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Home Menu Redesign:</strong> Streamlined the home screen into a clean 4-button menu (Play Online, Play with a Friend, Rules, Contact) with an expandable private friend room panel and custom room code entry.</li>
+          <li><strong>Interactive Move History:</strong> Clickable move chips, ribbon navigation buttons, and keyboard arrow navigation (<code>←</code>/<code>→</code>/<code>Home</code>/<code>End</code>) to review past board positions with smooth return to live play.</li>
+          <li><strong>Audio Overhaul:</strong> Added distinct sound effects for Check, Castling, Illegal moves / failed premoves, and a 30-second low-time warning.</li>
+          <li><strong>Play Again & Rematch Popup:</strong> In-place transition replacing Offer Draw and Resign with Play Again on game over, complete with an interactive Accept/Decline rematch popup and automatic color swapping.</li>
+          <li><strong>Pawn Diagonal Premoves:</strong> Pawns can now queue diagonal premoves into empty squares in anticipation of enemy piece movements.</li>
+          <li><strong>Clock & Matchmaking Fixes:</strong> Clocks accurately freeze at the exact moment of resignation/draw/checkmate, and private friend rooms are strictly isolated from public matchmaking.</li>
+        </ul>
       </div>
 
       <div class="changelog-entry">
@@ -377,6 +402,12 @@ document.querySelector("#app").innerHTML = `
             class="danger-button">
           Resign
         </button>
+
+        <button id="play-again"
+            type="button"
+            class="play-again-btn hidden">
+          Play Again
+        </button>
       </div>
 
       <div id="draw-offer"
@@ -394,6 +425,29 @@ document.querySelector("#app").innerHTML = `
             </button>
 
             <button id="decline-draw"
+                type="button"
+                class="secondary-button">
+              Decline
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="rematch-offer"
+          class="modal-backdrop hidden">
+        <div class="draw-offer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rematch-offer-text">
+          <span id="rematch-offer-text">Opponent offered a rematch!</span>
+
+          <div class="modal-actions">
+            <button id="accept-rematch"
+                type="button">
+              Accept Rematch
+            </button>
+
+            <button id="decline-rematch"
                 type="button"
                 class="secondary-button">
               Decline
@@ -558,6 +612,9 @@ const offerDrawButton =
 const resignButton =
   document.getElementById("resign-game");
 
+const playAgainButton =
+  document.getElementById("play-again");
+
 const drawOfferElement =
   document.getElementById("draw-offer");
 
@@ -569,6 +626,18 @@ const acceptDrawButton =
 
 const declineDrawButton =
   document.getElementById("decline-draw");
+
+const rematchOfferElement =
+  document.getElementById("rematch-offer");
+
+const rematchOfferTextElement =
+  document.getElementById("rematch-offer-text");
+
+const acceptRematchButton =
+  document.getElementById("accept-rematch");
+
+const declineRematchButton =
+  document.getElementById("decline-rematch");
 
 const resignConfirmModalElement =
   document.getElementById("resign-confirm-modal");
@@ -606,6 +675,9 @@ const existingRoomMessage =
 const contactPanel =
   document.getElementById("contact-panel");
 
+const friendPanel =
+  document.getElementById("friend-panel");
+
 appState.fen = getFen();
 appState.roomId = getRoomId();
 
@@ -639,36 +711,36 @@ setOnRerenderCallback(
 initializeSound();
 
 document
-  .getElementById("create-game")
-  .addEventListener(
-    "click",
-    createGame
-  );
-
-document
-  .getElementById("join-game-home")
-  .addEventListener(
+  .getElementById("play-online-button")
+  ?.addEventListener(
     "click",
     joinOpenGame
   );
 
 document
-  .getElementById("join-existing-home")
-  .addEventListener(
+  .getElementById("play-friend-button")
+  ?.addEventListener(
     "click",
-    showExistingRoomForm
+    () => toggleHomePanel(friendPanel)
+  );
+
+document
+  .getElementById("create-private-room-btn")
+  ?.addEventListener(
+    "click",
+    createGame
   );
 
 document
   .getElementById("rules-button")
-  .addEventListener(
+  ?.addEventListener(
     "click",
     goToRules
   );
 
 document
   .getElementById("contact-button")
-  .addEventListener(
+  ?.addEventListener(
     "click",
     () => toggleHomePanel(contactPanel)
   );
@@ -744,6 +816,34 @@ declineDrawButton.addEventListener(
   () => respondToDraw("decline")
 );
 
+playAgainButton.addEventListener(
+  "click",
+  async () => {
+    playAgainButton.disabled = true;
+    playAgainButton.textContent = "Waiting for Opponent...";
+    await submitRematch();
+    renderApp();
+  }
+);
+
+acceptRematchButton.addEventListener(
+  "click",
+  async () => {
+    rematchOfferElement.classList.add("hidden");
+    await submitRematch("accept");
+    renderApp();
+  }
+);
+
+declineRematchButton.addEventListener(
+  "click",
+  async () => {
+    rematchOfferElement.classList.add("hidden");
+    await submitRematch("decline");
+    renderApp();
+  }
+);
+
 homeButton.addEventListener(
   "click",
   goHome
@@ -752,22 +852,110 @@ homeButton.addEventListener(
 historyScrollLeftButton.addEventListener(
   "click",
   () => {
-    moveHistoryElement.scrollBy({
-      left: -120,
-      behavior: "smooth",
-    });
+    const moves = appState.moveHistory || [];
+    if (moves.length === 0) {
+      moveHistoryElement.scrollBy({
+        left: -120,
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    const currentIndex =
+      appState.selectedHistoryIndex === null
+        ? moves.length - 1
+        : appState.selectedHistoryIndex;
+
+    if (currentIndex > 0) {
+      goToHistoryIndex(currentIndex - 1);
+    } else {
+      goToHistoryIndex(-1);
+    }
   }
 );
 
 historyScrollRightButton.addEventListener(
   "click",
   () => {
-    moveHistoryElement.scrollBy({
-      left: 120,
-      behavior: "smooth",
-    });
+    const moves = appState.moveHistory || [];
+    if (moves.length === 0) {
+      moveHistoryElement.scrollBy({
+        left: 120,
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    const currentIndex =
+      appState.selectedHistoryIndex === null
+        ? moves.length - 1
+        : appState.selectedHistoryIndex;
+
+    if (currentIndex < moves.length - 1) {
+      goToHistoryIndex(currentIndex + 1);
+    } else {
+      goToHistoryIndex(null);
+    }
   }
 );
+
+moveHistoryElement.addEventListener(
+  "click",
+  (event) => {
+    const moveBtn = event.target.closest("[data-history-index]");
+    if (moveBtn) {
+      const index = Number(moveBtn.dataset.historyIndex);
+      if (index === (appState.moveHistory?.length ?? 0) - 1) {
+        appState.selectedHistoryIndex = null;
+      } else {
+        appState.selectedHistoryIndex = index;
+      }
+      renderApp();
+    }
+  }
+);
+
+window.addEventListener("keydown", (event) => {
+  if (
+    event.target.tagName === "INPUT" ||
+    event.target.tagName === "TEXTAREA" ||
+    !appState.roomId
+  ) {
+    return;
+  }
+
+  const moves = appState.moveHistory || [];
+  if (moves.length === 0) {
+    return;
+  }
+
+  const currentIndex =
+    appState.selectedHistoryIndex === null
+      ? moves.length - 1
+      : appState.selectedHistoryIndex;
+
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    if (currentIndex > 0) {
+      goToHistoryIndex(currentIndex - 1);
+    } else {
+      goToHistoryIndex(-1);
+    }
+  } else if (event.key === "ArrowRight") {
+    event.preventDefault();
+    if (currentIndex < moves.length - 1) {
+      goToHistoryIndex(currentIndex + 1);
+    } else {
+      goToHistoryIndex(null);
+    }
+  } else if (event.key === "Home") {
+    event.preventDefault();
+    goToHistoryIndex(-1);
+  } else if (event.key === "End") {
+    event.preventDefault();
+    goToHistoryIndex(null);
+  }
+});
 
 gameOverContinueButton.addEventListener(
   "click",
@@ -843,27 +1031,11 @@ async function joinOpenGame() {
   }
 }
 
-function showExistingRoomForm() {
-  existingRoomForm.classList.toggle(
-    "hidden"
-  );
-
-  contactPanel.classList.add(
-    "hidden"
-  );
-
-  clearExistingRoomMessage();
-
-  if (!existingRoomForm.classList.contains("hidden")) {
-    existingRoomInput.focus();
-  }
-}
-
 function toggleHomePanel(panel) {
   const shouldShow =
     panel.classList.contains("hidden");
 
-  existingRoomForm.classList.add(
+  friendPanel.classList.add(
     "hidden"
   );
 
@@ -875,6 +1047,11 @@ function toggleHomePanel(panel) {
     panel.classList.remove(
       "hidden"
     );
+
+    if (panel === friendPanel) {
+      clearExistingRoomMessage();
+      existingRoomInput.focus();
+    }
   }
 }
 
@@ -1039,27 +1216,45 @@ function renderLobby() {
 }
 
 function renderGame() {
+  const isViewingHistory =
+    appState.selectedHistoryIndex !== null &&
+    appState.selectedHistoryIndex < (appState.moveHistory?.length ?? 0) - 1;
+
+  let displayFen = appState.fen;
+  let displayLastMove = appState.lastMove;
+
+  if (appState.selectedHistoryIndex !== null) {
+    const historical = getPositionAtHistoryIndex(
+      appState.moveHistory,
+      appState.selectedHistoryIndex
+    );
+    displayFen = historical.fen;
+    displayLastMove = historical.lastMove;
+  }
+
   createBoard(
     boardElement,
-    appState.fen,
-    appState.draggedFrom,
-    appState.selectedSquare,
-    appState.legalMoves,
+    displayFen,
+    isViewingHistory ? null : appState.draggedFrom,
+    isViewingHistory ? null : appState.selectedSquare,
+    isViewingHistory ? [] : appState.legalMoves,
     appState.boardOrientation,
-    appState.lastMove,
-    appState.premove
+    displayLastMove,
+    isViewingHistory ? null : appState.premove
   );
 
   renderReserve(
     reserveElement,
     appState.reservePieces,
-    appState.selectedSource,
+    isViewingHistory ? null : appState.selectedSource,
     appState.elixir,
     appState.playerColor
   );
 
   statusElement.textContent =
-    appState.statusMessage;
+    isViewingHistory
+      ? `Viewing move ${appState.selectedHistoryIndex === -1 ? "start" : (appState.moveHistory?.[appState.selectedHistoryIndex]?.turnNumber ? `${appState.moveHistory[appState.selectedHistoryIndex].turnNumber}.${appState.moveHistory[appState.selectedHistoryIndex].color === "w" ? "" : ".."}${appState.moveHistory[appState.selectedHistoryIndex].notation}` : appState.selectedHistoryIndex + 1)}`
+      : appState.statusMessage;
 
   renderElixir();
 
@@ -1098,12 +1293,43 @@ function renderDrawControls() {
   const gameOver =
     Boolean(appState.gameOver);
 
-  offerDrawButton.disabled =
-    !isPlayer || gameOver ||
-    appState.drawOffer === appState.playerColor;
+  if (gameOver) {
+    offerDrawButton.classList.add("hidden");
+    resignButton.classList.add("hidden");
 
-  resignButton.disabled =
-    !isPlayer || gameOver;
+    if (isPlayer) {
+      playAgainButton.classList.remove("hidden");
+      const opponentRole = appState.playerColor === "w" ? "b" : "w";
+
+      if (appState.rematchOffer === appState.playerColor) {
+        playAgainButton.textContent = "Waiting for Opponent...";
+        playAgainButton.disabled = true;
+      } else if (appState.rematchOffer === opponentRole) {
+        playAgainButton.textContent = "Accept Rematch";
+        playAgainButton.disabled = false;
+      } else {
+        playAgainButton.textContent = "Play Again";
+        playAgainButton.disabled = false;
+      }
+    } else {
+      playAgainButton.classList.add("hidden");
+    }
+  } else {
+    playAgainButton.classList.add("hidden");
+
+    if (isPlayer) {
+      offerDrawButton.classList.remove("hidden");
+      resignButton.classList.remove("hidden");
+
+      offerDrawButton.disabled =
+        appState.drawOffer === appState.playerColor;
+
+      resignButton.disabled = false;
+    } else {
+      offerDrawButton.classList.add("hidden");
+      resignButton.classList.add("hidden");
+    }
+  }
 
   const hasIncomingOffer =
     isPlayer &&
@@ -1124,6 +1350,27 @@ function renderDrawControls() {
 
     drawOfferTextElement.textContent =
       `${offerLabel} offered a draw.`;
+  }
+
+  const hasIncomingRematchOffer =
+    isPlayer &&
+    gameOver &&
+    appState.rematchOffer &&
+    appState.rematchOffer !== appState.playerColor;
+
+  rematchOfferElement.classList.toggle(
+    "hidden",
+    !hasIncomingRematchOffer
+  );
+
+  if (hasIncomingRematchOffer) {
+    const offerLabel =
+      appState.rematchOffer === "w"
+        ? "White"
+        : "Black";
+
+    rematchOfferTextElement.textContent =
+      `${offerLabel} offered a rematch!`;
   }
 }
 
@@ -1155,6 +1402,29 @@ function renderClocks() {
     appState.clockTurn === "b" &&
     !appState.gameOver
   );
+
+  whiteClockElement.classList.toggle(
+    "low-time",
+    clocks.w <= 30000 && !appState.gameOver
+  );
+
+  blackClockElement.classList.toggle(
+    "low-time",
+    clocks.b <= 30000 && !appState.gameOver
+  );
+
+  if (
+    !appState.gameOver &&
+    (appState.playerColor === "w" || appState.playerColor === "b") &&
+    appState.clockTurn === appState.playerColor &&
+    !appState.hasPlayedLowTimeWarning
+  ) {
+    const myTime = clocks[appState.playerColor];
+    if (myTime > 0 && myTime <= 30000) {
+      appState.hasPlayedLowTimeWarning = true;
+      playLowTimeSound();
+    }
+  }
 }
 
 function getDisplayClocks() {
@@ -1221,34 +1491,76 @@ function renderMoveHistory() {
   const rows =
     new Map();
 
-  for (const move of moves) {
+  for (let i = 0; i < moves.length; i++) {
+    const move = moves[i];
     if (!rows.has(move.turnNumber)) {
       rows.set(
         move.turnNumber,
         {
-          w: "",
-          b: "",
+          w: null,
+          b: null,
         }
       );
     }
 
-    rows.get(move.turnNumber)[move.color] =
-      move.notation;
+    rows.get(move.turnNumber)[move.color] = {
+      notation: move.notation,
+      index: i,
+    };
   }
+
+  const activeIdx =
+    appState.selectedHistoryIndex === null
+      ? moves.length - 1
+      : appState.selectedHistoryIndex;
 
   moveHistoryElement.innerHTML =
     Array.from(rows.entries())
       .map(([turnNumber, row]) => `
         <div class="history-item">
           <span class="history-turn">${turnNumber}.</span>
-          <span class="white-move">${row.w || ""}</span>
-          ${row.b ? `<span class="black-move">${row.b}</span>` : ""}
+          ${
+            row.w
+              ? `<button type="button" class="history-move white-move ${row.w.index === activeIdx ? "active-move" : ""}" data-history-index="${row.w.index}">${row.w.notation}</button>`
+              : ""
+          }
+          ${
+            row.b
+              ? `<button type="button" class="history-move black-move ${row.b.index === activeIdx ? "active-move" : ""}" data-history-index="${row.b.index}">${row.b.notation}</button>`
+              : ""
+          }
         </div>
       `)
       .join("");
 
-  moveHistoryElement.scrollLeft =
-    moveHistoryElement.scrollWidth;
+  const activeMoveBtn =
+    moveHistoryElement.querySelector(".active-move");
+
+  if (activeMoveBtn) {
+    activeMoveBtn.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "nearest",
+    });
+  } else if (appState.selectedHistoryIndex === null) {
+    moveHistoryElement.scrollLeft =
+      moveHistoryElement.scrollWidth;
+  }
+}
+
+function goToHistoryIndex(index) {
+  const moves = appState.moveHistory || [];
+  if (moves.length === 0) {
+    return;
+  }
+
+  if (index === null || index >= moves.length - 1) {
+    appState.selectedHistoryIndex = null;
+  } else {
+    appState.selectedHistoryIndex = Math.max(-1, index);
+  }
+
+  renderApp();
 }
 
 function renderGameOver() {

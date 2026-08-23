@@ -352,6 +352,13 @@ export class GameRoom {
       );
     }
 
+    if (action === "rematch") {
+      return this.handleRematch(
+        body,
+        request
+      );
+    }
+
     return json(
       {
         error: "Unknown room action",
@@ -579,7 +586,7 @@ export class GameRoom {
     }
     updateGameOver(state);
     state.clockUpdatedAt =
-      Date.now();
+      state.gameOver ? null : Date.now();
 
     await this.saveState(state);
     await this.setClockAlarm(state);
@@ -747,7 +754,7 @@ export class GameRoom {
     state.elixir[role] -= cost;
     updateGameOver(state);
     state.clockUpdatedAt =
-      Date.now();
+      state.gameOver ? null : Date.now();
 
     await this.saveState(state);
     await this.setClockAlarm(state);
@@ -802,13 +809,17 @@ export class GameRoom {
       );
     }
 
+    syncClock(state);
+
     state.gameOver = {
       reason: "resignation",
       winner: oppositeColor(role),
     };
     state.drawOffer = null;
+    state.clockUpdatedAt = null;
 
     await this.saveState(state);
+    await this.setClockAlarm(state);
 
     this.broadcast(state);
 
@@ -870,11 +881,14 @@ export class GameRoom {
         );
       }
 
+      syncClock(state);
+
       state.gameOver = {
         reason: "draw",
         winner: null,
       };
       state.drawOffer = null;
+      state.clockUpdatedAt = null;
     } else if (body.response === "decline") {
       if (state.drawOffer !== oppositeColor(role)) {
         return json(
@@ -894,6 +908,119 @@ export class GameRoom {
     await this.saveState(state);
     await this.setClockAlarm(state);
 
+    this.broadcast(state);
+
+    return json(
+      serializeState(
+        state,
+        role
+      ),
+      200,
+      request
+    );
+  }
+
+  async handleRematch(
+    body,
+    request
+  ) {
+    const state =
+      await this.getState();
+
+    const role =
+      getRole(
+        state,
+        body.playerId
+      );
+
+    if (
+      role !== "w" &&
+      role !== "b"
+    ) {
+      return json(
+        {
+          error: "Only players can request a rematch",
+        },
+        403,
+        request
+      );
+    }
+
+    if (!state.gameOver) {
+      return json(
+        {
+          error: "Game is still in progress",
+        },
+        400,
+        request
+      );
+    }
+
+    const opponentRole = oppositeColor(role);
+    const opponentPresent = Boolean(state.players[opponentRole]);
+
+    if (body.response === "decline") {
+      if (state.rematchOffer === opponentRole) {
+        state.rematchOffer = null;
+        await this.saveState(state);
+        this.broadcast(state);
+      }
+
+      return json(
+        serializeState(
+          state,
+          role
+        ),
+        200,
+        request
+      );
+    }
+
+    if (!opponentPresent || state.rematchOffer === opponentRole) {
+      const oldW = state.players.w;
+      const oldB = state.players.b;
+
+      state.players.w = oldB;
+      state.players.b = oldW;
+
+      state.fen = new Chess().fen();
+      state.gameOver = null;
+      state.drawOffer = null;
+      state.rematchOffer = null;
+      state.lastMove = null;
+      state.moveHistory = [];
+      state.elixir = {
+        w: INITIAL_ELIXIR,
+        b: INITIAL_ELIXIR,
+      };
+      state.score = {
+        w: 0,
+        b: 0,
+      };
+      state.clocks = {
+        w: INITIAL_CLOCK_MS,
+        b: INITIAL_CLOCK_MS,
+      };
+      startClock(state);
+
+      await this.saveState(state);
+      await this.setClockAlarm(state);
+
+      this.broadcast(state);
+
+      return json(
+        serializeState(
+          state,
+          getRole(state, body.playerId)
+        ),
+        200,
+        request
+      );
+    }
+
+    state.rematchOffer = role;
+
+    await this.saveState(state);
     this.broadcast(state);
 
     return json(
@@ -994,6 +1121,7 @@ export class GameRoom {
         "lastMove",
         "gameOver",
         "drawOffer",
+        "rematchOffer",
         "elixir",
         "score",
         "moveHistory",
@@ -1020,6 +1148,9 @@ export class GameRoom {
         null,
       drawOffer:
         stored.get("drawOffer") ||
+        null,
+      rematchOffer:
+        stored.get("rematchOffer") ||
         null,
       elixir:
         normalizeElixir(
@@ -1051,6 +1182,7 @@ export class GameRoom {
       lastMove: state.lastMove,
       gameOver: state.gameOver,
       drawOffer: state.drawOffer,
+      rematchOffer: state.rematchOffer || null,
       elixir: normalizeElixir(state.elixir),
       score: normalizeScore(state.score),
       moveHistory:
@@ -1253,18 +1385,6 @@ async function updateWaitingRoom(
   const payload =
     await response.json();
 
-  if (
-    payload.players?.player1 &&
-    !payload.players?.player2
-  ) {
-    await setWaitingRoomFromRoomId(
-      env,
-      roomId
-    );
-
-    return;
-  }
-
   if (payload.players?.player2) {
     await clearWaitingRoomFromRoomId(
       env,
@@ -1310,24 +1430,6 @@ async function clearWaitingRoom(
   await matchmaker.fetch(
     new Request(
       `${url.origin}/clear`,
-      {
-        method: "POST",
-        body: JSON.stringify({ roomId }),
-      }
-    )
-  );
-}
-
-async function setWaitingRoomFromRoomId(
-  env,
-  roomId
-) {
-  const matchmaker =
-    getMatchmaker(env);
-
-  await matchmaker.fetch(
-    new Request(
-      "https://internal/waiting",
       {
         method: "POST",
         body: JSON.stringify({ roomId }),
@@ -1442,6 +1544,7 @@ function serializeState(
       player2: Boolean(state.players.player2),
     },
     drawOffer: state.drawOffer,
+    rematchOffer: state.rematchOffer || null,
     gameOver: state.gameOver,
     elixir: normalizeElixir(state.elixir),
     score: normalizeScore(state.score),
@@ -1583,6 +1686,7 @@ function syncClock(state) {
       reason: "timeout",
       winner: oppositeColor(turn),
     };
+    state.clockUpdatedAt = null;
   }
 }
 

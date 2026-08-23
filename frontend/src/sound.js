@@ -1,6 +1,10 @@
 const SOUND_SOURCES = {
   move: "/sounds/move.mp3",
   capture: "/sounds/capture.mp3",
+  check: "/sounds/move-check.mp3",
+  castle: "/sounds/castle.mp3",
+  illegal: "/sounds/illegal.mp3",
+  lowTime: "/sounds/thirtyseconds.mp3",
   victory: "/sounds/victory.mp3",
   gameOver: "/sounds/game_over.mp3",
 };
@@ -40,12 +44,29 @@ export function initializeSound() {
   );
 }
 
-export function playMoveSound(isCapture = false) {
-  playSound(
-    isCapture
-      ? "capture"
-      : "move"
-  );
+export function playMoveSound(options = {}) {
+  const opts =
+    typeof options === "boolean"
+      ? { isCapture: options }
+      : options;
+
+  if (opts.isCheck) {
+    playSound("check");
+  } else if (opts.isCastle) {
+    playSound("castle");
+  } else if (opts.isCapture) {
+    playSound("capture");
+  } else {
+    playSound("move");
+  }
+}
+
+export function playIllegalSound() {
+  playSound("illegal");
+}
+
+export function playLowTimeSound() {
+  playSound("lowTime");
 }
 
 export function playGameOverSound(

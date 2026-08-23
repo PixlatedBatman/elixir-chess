@@ -223,19 +223,27 @@ body {
   gap: 10px;
 }
 
-.room-entry input {
+.room-entry input,
+.friend-room-form input {
   min-width: 0;
   flex: 1;
-
-  padding: 0 12px;
-
+  min-height: 42px;
+  height: 42px;
+  padding: 0 14px;
+  box-sizing: border-box;
   color: #f4f4f4;
-  background: #202020;
-
-  border: 1px solid #555;
+  background: #181818;
+  border: 1px solid #444;
   border-radius: 6px;
-
   font: inherit;
+  font-size: 14px;
+  transition: border-color 0.15s ease;
+}
+
+.room-entry input:focus,
+.friend-room-form input:focus {
+  border-color: #f0d9b5;
+  outline: none;
 }
 
 .form-message {
@@ -278,6 +286,41 @@ body {
 
 .info-panel a {
   color: #f0d9b5;
+}
+
+.friend-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.friend-create-btn {
+  width: 100%;
+}
+
+.friend-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #888;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.friend-divider::before,
+.friend-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #383838;
+}
+
+.friend-divider span {
+  padding: 0 10px;
+}
+
+.friend-room-form {
+  display: grid;
+  gap: 8px;
 }
 
 button {
@@ -432,6 +475,11 @@ button:disabled {
 .game-actions button {
   flex: 1;
   max-width: 200px;
+}
+
+.play-again-btn {
+  max-width: 240px !important;
+  font-weight: 700;
 }
 
 .modal-backdrop {
@@ -656,6 +704,17 @@ button:disabled {
   font-weight: 800;
 }
 
+.clock.low-time {
+  color: #ff6b6b;
+  border-color: #d9534f;
+}
+
+.clock.active.low-time {
+  color: #ffffff;
+  background: #c53030;
+  border-color: #e53e3e;
+}
+
 .history-panel {
   width: 100%;
 
@@ -742,8 +801,8 @@ button:disabled {
 .history-item {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
+  gap: 3px;
+  padding: 3px 6px;
 
   background: #1e1e1e;
   border: 1px solid #3a3a3a;
@@ -756,6 +815,31 @@ button:disabled {
 
 .history-turn {
   color: #8e8e8e;
+  font-weight: 700;
+  padding: 0 3px;
+}
+
+.history-move {
+  background: transparent;
+  border: 0;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  min-height: unset;
+  line-height: 1.2;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.history-move:hover {
+  background: #333333;
+  filter: none;
+}
+
+.history-move.active-move {
+  background: #f0d9b5;
+  color: #111111;
   font-weight: 700;
 }
 

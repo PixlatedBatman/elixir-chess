@@ -11,6 +11,7 @@ import {
   getFen,
   getBoard,
   placeReserve,
+  inCheck,
 } from "./game";
 
 import {
@@ -31,6 +32,7 @@ import {
 
 import {
   playMoveSound,
+  playIllegalSound,
 } from "./sound";
 
 const PIECE_VALUES = {
@@ -145,6 +147,12 @@ function startDragging(event) {
   if (!piece) return;
 
   if (appState.gameOver) {
+    return;
+  }
+
+  if (appState.selectedHistoryIndex !== null) {
+    appState.selectedHistoryIndex = null;
+    rerender();
     return;
   }
 
@@ -367,6 +375,9 @@ async function stopDragging(event) {
     const pieceCode =
       appState.draggedPiece;
 
+    const isTargetAllowed =
+      appState.legalMoves.includes(target);
+
     cleanupDrag();
 
     if (isMyTurn()) {
@@ -385,12 +396,15 @@ async function stopDragging(event) {
       } else {
         rerender();
       }
-    } else {
+    } else if (isTargetAllowed) {
       appState.premove = {
         type: "reserve",
         pieceCode,
         target,
       };
+      rerender();
+    } else {
+      playIllegalSound();
       rerender();
     }
 
@@ -407,19 +421,30 @@ async function stopDragging(event) {
   const from =
     appState.draggedFrom;
 
+  const isTargetAllowed =
+    appState.legalMoves.includes(target);
+
   cleanupDrag();
 
   if (isMyTurn()) {
-    await commitMove(
-      from,
-      target
-    );
-  } else {
+    if (isTargetAllowed) {
+      await commitMove(
+        from,
+        target
+      );
+    } else {
+      playIllegalSound();
+      rerender();
+    }
+  } else if (isTargetAllowed) {
     appState.premove = {
       type: "move",
       from,
       to: target,
     };
+    rerender();
+  } else {
+    playIllegalSound();
     rerender();
   }
 }
@@ -584,7 +609,17 @@ async function commitMove(from, to) {
   const nextTurnLabel = appState.clockTurn === "w" ? "White" : "Black";
   appState.statusMessage = `${myRoleLabel} player. ${nextTurnLabel} to move.`;
 
-  playMoveSound(isCapture);
+  const isCheck = inCheck();
+  const isCastle =
+    move.flags?.includes("k") ||
+    move.flags?.includes("q") ||
+    move.san?.startsWith("O-O");
+
+  playMoveSound({
+    isCheck,
+    isCastle,
+    isCapture,
+  });
 
   appState.lastSoundKey =
     getMoveSoundKey(
@@ -607,12 +642,14 @@ async function commitMove(from, to) {
 
     if (!success) {
       rollbackState(rollbackSnapshot);
+      playIllegalSound();
       return false;
     }
 
     return true;
   } catch {
     rollbackState(rollbackSnapshot);
+    playIllegalSound();
     return false;
   }
 }
@@ -714,7 +751,12 @@ async function commitReserve(
   const nextTurnLabel = appState.clockTurn === "w" ? "White" : "Black";
   appState.statusMessage = `${myRoleLabel} player. ${nextTurnLabel} to move.`;
 
-  playMoveSound(false);
+  const isCheck = inCheck();
+
+  playMoveSound({
+    isCheck,
+    isCapture: false,
+  });
 
   appState.lastSoundKey =
     getMoveSoundKey(
@@ -737,12 +779,14 @@ async function commitReserve(
 
     if (!success) {
       rollbackState(rollbackSnapshot);
+      playIllegalSound();
       return false;
     }
 
     return true;
   } catch {
     rollbackState(rollbackSnapshot);
+    playIllegalSound();
     return false;
   }
 }
@@ -826,6 +870,7 @@ export async function executePremove() {
         premove.to
       );
     } else {
+      playIllegalSound();
       rerender();
     }
   } else if (premove.type === "reserve") {
@@ -849,6 +894,7 @@ export async function executePremove() {
         premove.target
       );
     } else {
+      playIllegalSound();
       rerender();
     }
   }
@@ -856,6 +902,12 @@ export async function executePremove() {
 
 async function handleBoardClick(event) {
   if (appState.gameOver) {
+    return;
+  }
+
+  if (appState.selectedHistoryIndex !== null) {
+    appState.selectedHistoryIndex = null;
+    rerender();
     return;
   }
 
@@ -1064,6 +1116,10 @@ async function handleBoardClick(event) {
       rerender();
     }
     return;
+  }
+
+  if (appState.selectedSource) {
+    playIllegalSound();
   } else if (appState.premove) {
     appState.premove = null;
   }

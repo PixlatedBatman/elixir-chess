@@ -4,6 +4,7 @@ import {
 
 import {
   setFen,
+  inCheck,
 } from "./game";
 
 import {
@@ -274,6 +275,17 @@ export async function submitDraw(
   );
 }
 
+export async function submitRematch(
+  response = null
+) {
+  return postRoomAction(
+    "rematch",
+    response
+      ? { response }
+      : {}
+  );
+}
+
 function applyServerState(payload) {
   const previousState = {
     gameOver:
@@ -294,6 +306,8 @@ function applyServerState(payload) {
     payload.players;
   appState.drawOffer =
     payload.drawOffer || null;
+  appState.rematchOffer =
+    payload.rematchOffer || null;
   appState.gameOver =
     payload.gameOver || null;
   appState.elixir =
@@ -341,6 +355,10 @@ function applyServerState(payload) {
   appState.hasReceivedServerState = true;
 
   if (payload.gameOver) {
+    appState.premove = null;
+  } else if (previousState.gameOver && !payload.gameOver) {
+    appState.selectedHistoryIndex = null;
+    appState.hasPlayedLowTimeWarning = false;
     appState.premove = null;
   }
 
@@ -405,12 +423,22 @@ function playSoundsForServerState(
     appState.lastSoundKey =
       moveSoundKey;
 
-    playMoveSound(
+    const isCheck = inCheck();
+    const lastHistoryMove =
+      payload.moveHistory?.[payload.moveHistory.length - 1];
+    const isCastle =
+      lastHistoryMove?.notation?.startsWith("O-O");
+    const isCapture =
       didScoreIncrease(
         previousState.score,
         payload.score
-      )
-    );
+      );
+
+    playMoveSound({
+      isCheck,
+      isCastle,
+      isCapture,
+    });
   }
 }
 
