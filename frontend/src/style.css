@@ -889,7 +889,7 @@ button:disabled {
 }
 
 .dark.premove-square::before {
-  background: rgba(56, 189, 248, 0.4);
+  background: rgba(99, 128, 250, 0.36);
 }
 
 .king-in-check {
