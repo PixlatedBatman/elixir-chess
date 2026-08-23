@@ -18,7 +18,8 @@ export function createBoard(
   selectedSquare = null,
   legalMoves = [],
   orientation = "w",
-  lastMove = null
+  lastMove = null,
+  premove = null
 ) {
 
   boardElement.innerHTML = "";
@@ -136,6 +137,19 @@ export function createBoard(
       ) {
         square.classList.add(
           "last-move"
+        );
+      }
+
+      if (
+        premove &&
+        ((premove.type === "move" &&
+          (coordinate === premove.from ||
+            coordinate === premove.to)) ||
+          (premove.type === "reserve" &&
+            coordinate === premove.target))
+      ) {
+        square.classList.add(
+          "premove-square"
         );
       }
 

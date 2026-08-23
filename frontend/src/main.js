@@ -1020,7 +1020,8 @@ function renderGame() {
     appState.selectedSquare,
     appState.legalMoves,
     appState.boardOrientation,
-    appState.lastMove
+    appState.lastMove,
+    appState.premove
   );
 
   renderReserve(

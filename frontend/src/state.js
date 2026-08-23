@@ -59,5 +59,5 @@ export const appState = {
 
   hasReceivedServerState: false,
   lastSoundKey: null,
-
+  premove: null,
 };
