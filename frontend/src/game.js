@@ -25,6 +25,33 @@ export function getLegalMoves(square) {
   });
 }
 
+export function getHypotheticalMoves(square, color) {
+  try {
+    const currentFen = game.fen();
+    const fenParts = currentFen.split(" ");
+
+    if (fenParts[1] !== color) {
+      fenParts[1] = color;
+      fenParts[3] = "-";
+
+      const tempGame =
+        new Chess(fenParts.join(" "));
+
+      return tempGame.moves({
+        square,
+        verbose: true,
+      });
+    }
+
+    return game.moves({
+      square,
+      verbose: true,
+    });
+  } catch {
+    return [];
+  }
+}
+
 export function getFen() {
   return game.fen();
 }

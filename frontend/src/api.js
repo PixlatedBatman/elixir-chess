@@ -11,6 +11,10 @@ import {
   playMoveSound,
 } from "./sound";
 
+import {
+  executePremove,
+} from "./interaction";
+
 const DEFAULT_API_BASE_URL =
   "https://api.elixirchess.karthikkashyap.com";
 
@@ -335,6 +339,18 @@ function applyServerState(payload) {
   );
 
   appState.hasReceivedServerState = true;
+
+  if (payload.gameOver) {
+    appState.premove = null;
+  }
+
+  if (
+    !payload.gameOver &&
+    payload.turn === payload.role &&
+    appState.premove
+  ) {
+    executePremove();
+  }
 }
 
 function playSoundsForServerState(
@@ -410,7 +426,7 @@ function getGameOverSoundKey(gameOver) {
   ].join(":");
 }
 
-function getMoveSoundKey(
+export function getMoveSoundKey(
   lastMove,
   score
 ) {

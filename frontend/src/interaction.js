@@ -3,9 +3,11 @@ import {
 } from "./state";
 
 import {
+  setFen,
   getTurn,
   tryMove,
   getLegalMoves,
+  getHypotheticalMoves,
   getFen,
   getBoard,
   placeReserve,
@@ -24,11 +26,20 @@ import {
 import {
   submitMove,
   submitReserve,
+  getMoveSoundKey,
 } from "./api";
 
 import {
   playMoveSound,
 } from "./sound";
+
+const PIECE_VALUES = {
+  p: 1,
+  b: 3,
+  n: 3,
+  r: 5,
+  q: 9,
+};
 
 const RESERVE_COSTS = {
   P: 1,
@@ -37,6 +48,14 @@ const RESERVE_COSTS = {
   R: 5,
   Q: 9,
 };
+
+let onRerenderCallback = null;
+
+export function setOnRerenderCallback(
+  callback
+) {
+  onRerenderCallback = callback;
+}
 
 // ---------------- DRAG STATE ----------------
 
@@ -66,12 +85,12 @@ export function initializeInteractions(
 
   boardElement.addEventListener(
     "contextmenu",
-    preventPieceContextMenu
+    handleContextMenu
   );
 
   reserveElement.addEventListener(
     "contextmenu",
-    preventPieceContextMenu
+    handleContextMenu
   );
 
   boardElement.addEventListener(
@@ -100,11 +119,12 @@ export function initializeInteractions(
   );
 }
 
-function preventPieceContextMenu(event) {
-  if (
-    event.target.closest(".piece")
-  ) {
-    event.preventDefault();
+function handleContextMenu(event) {
+  event.preventDefault();
+
+  if (appState.premove) {
+    appState.premove = null;
+    rerender();
   }
 }
 
@@ -152,20 +172,19 @@ function startDragging(event) {
   const pieceColor =
     pieceCode[0];
 
-  // wrong turn
-  if (!canControlColor(pieceColor)) {
+  if (!canControlPiece(pieceColor)) {
     return;
   }
 
-  // no legal moves
-  const legalMoves =
-    getLegalMoves(from);
+  const legalMoves = isMyTurn()
+    ? getLegalMoves(from)
+    : getHypotheticalMoves(from, pieceColor);
 
   appState.selectedSquare = from;
 
-    appState.legalMoves =
+  appState.legalMoves =
     legalMoves.map(
-        move => move.to
+      move => move.to
     );
 
   if (legalMoves.length === 0) {
@@ -210,11 +229,11 @@ function startReserveDragging(
   const pieceColor =
     pieceCode[0];
 
-  if (!canControlColor(pieceColor)) {
+  if (!canControlPiece(pieceColor)) {
     return;
   }
 
-  if (!canAffordReserve(pieceCode)) {
+  if (isMyTurn() && !canAffordReserve(pieceCode)) {
     appState.statusMessage =
       "Not enough Elixir";
     rerender();
@@ -345,19 +364,27 @@ async function stopDragging(event) {
       "reserve:"
     )
   ) {
+    if (isMyTurn()) {
+      const legal =
+        canPlaceReserve(
+          appState.fen,
+          appState.draggedPiece,
+          target
+        );
 
-    const legal =
-      canPlaceReserve(
-        appState.fen,
-        appState.draggedPiece,
-        target
-      );
-
-    if (legal) {
-      await commitReserve(
-        appState.draggedPiece,
-        target
-      );
+      if (legal) {
+        await commitReserve(
+          appState.draggedPiece,
+          target
+        );
+      }
+    } else {
+      appState.premove = {
+        type: "reserve",
+        pieceCode:
+          appState.draggedPiece,
+        target,
+      };
     }
 
     cleanupDrag();
@@ -372,10 +399,18 @@ async function stopDragging(event) {
     return;
   }
 
-  await commitMove(
+  if (isMyTurn()) {
+    await commitMove(
       appState.draggedFrom,
       target
     );
+  } else {
+    appState.premove = {
+      type: "move",
+      from: appState.draggedFrom,
+      to: target,
+    };
+  }
 
   cleanupDrag();
 
@@ -442,60 +477,180 @@ function canAffordReserve(pieceCode) {
   return appState.elixir?.[color] >= cost;
 }
 
-function canControlColor(color) {
-  if (color !== getTurn()) {
-    return false;
-  }
-
+function canControlPiece(color) {
   if (!appState.online) {
-    return true;
+    return color === getTurn();
   }
 
   return appState.playerColor === color;
 }
 
-async function commitMove(from, to) {
-  if (appState.online) {
-    return submitMove(
-      from,
-      to
-    );
+function isMyTurn() {
+  if (!appState.online) {
+    return true;
   }
 
+  return appState.playerColor === getTurn();
+}
+
+async function commitMove(from, to) {
   const move =
     tryMove(
       from,
       to
     );
 
-  if (move) {
-    appState.fen = getFen();
-    appState.lastMove = {
-      type: "move",
-      squares: [
-        from,
-        to,
-      ],
-    };
-
-    playMoveSound(
-      Boolean(move.captured)
-    );
+  if (!move) {
+    return false;
   }
 
-  return Boolean(move);
+  const role =
+    appState.playerColor ||
+    getTurn();
+
+  const isCapture =
+    Boolean(move.captured);
+
+  const rollbackSnapshot = {
+    fen: appState.fen,
+    lastMove: appState.lastMove,
+    elixir: appState.elixir
+      ? { ...appState.elixir }
+      : null,
+    score: appState.score
+      ? { ...appState.score }
+      : null,
+    moveHistory: appState.moveHistory
+      ? [...appState.moveHistory]
+      : [],
+    clockTurn: appState.clockTurn,
+  };
+
+  const turnNumber =
+    Number(appState.fen.split(" ")[5]) || 1;
+
+  appState.fen = getFen();
+  appState.lastMove = {
+    type: "move",
+    squares: [
+      from,
+      to,
+    ],
+  };
+
+  appState.moveHistory = [
+    ...(appState.moveHistory || []),
+    {
+      color: role,
+      turnNumber,
+      notation: move.san,
+      type: "move",
+      from: move.from,
+      to: move.to,
+    },
+  ];
+
+  if (appState.elixir && role) {
+    appState.elixir = {
+      ...appState.elixir,
+      [role]:
+        (appState.elixir[role] ?? 3) + 1,
+    };
+  }
+
+  if (appState.score && role && move.captured) {
+    appState.score = {
+      ...appState.score,
+      [role]:
+        (appState.score[role] ?? 0) +
+        (PIECE_VALUES[move.captured.toLowerCase()] || 0),
+    };
+  }
+
+  appState.clockTurn = getTurn();
+
+  playMoveSound(isCapture);
+
+  appState.lastSoundKey =
+    getMoveSoundKey(
+      appState.lastMove,
+      appState.score
+    );
+
+  rerender();
+
+  if (!appState.online) {
+    return true;
+  }
+
+  try {
+    const success =
+      await submitMove(
+        from,
+        to
+      );
+
+    if (!success) {
+      rollbackState(rollbackSnapshot);
+      return false;
+    }
+
+    return true;
+  } catch {
+    rollbackState(rollbackSnapshot);
+    return false;
+  }
 }
 
 async function commitReserve(
   pieceCode,
   target
 ) {
-  if (appState.online) {
-    return submitReserve(
+  const role =
+    pieceCode[0];
+
+  const cost =
+    RESERVE_COSTS[pieceCode[1]] ||
+    Number.POSITIVE_INFINITY;
+
+  if (
+    appState.elixir &&
+    (appState.elixir[role] ?? 0) < cost
+  ) {
+    appState.statusMessage =
+      "Not enough Elixir";
+    rerender();
+    return false;
+  }
+
+  const legal =
+    canPlaceReserve(
+      appState.fen,
       pieceCode,
       target
     );
+
+  if (!legal) {
+    return false;
   }
+
+  const rollbackSnapshot = {
+    fen: appState.fen,
+    lastMove: appState.lastMove,
+    elixir: appState.elixir
+      ? { ...appState.elixir }
+      : null,
+    score: appState.score
+      ? { ...appState.score }
+      : null,
+    moveHistory: appState.moveHistory
+      ? [...appState.moveHistory]
+      : [],
+    clockTurn: appState.clockTurn,
+  };
+
+  const turnNumber =
+    Number(appState.fen.split(" ")[5]) || 1;
 
   const placed =
     placeReserve(
@@ -503,46 +658,119 @@ async function commitReserve(
       target
     );
 
-  if (placed) {
-    appState.fen = getFen();
-    appState.lastMove = {
-      type: "reserve",
-      squares: [
-        target,
-      ],
-    };
-
-    playMoveSound();
+  if (!placed) {
+    return false;
   }
 
-  return placed;
+  appState.fen = getFen();
+  appState.lastMove = {
+    type: "reserve",
+    squares: [
+      target,
+    ],
+  };
+
+  appState.moveHistory = [
+    ...(appState.moveHistory || []),
+    {
+      color: role,
+      turnNumber,
+      notation: `${pieceCode?.[1] || "P"}@${target}`,
+      type: "reserve",
+      to: target,
+    },
+  ];
+
+  if (appState.elixir) {
+    appState.elixir = {
+      ...appState.elixir,
+      [role]:
+        (appState.elixir[role] ?? 3) - cost,
+    };
+  }
+
+  appState.clockTurn = getTurn();
+
+  playMoveSound(false);
+
+  appState.lastSoundKey =
+    getMoveSoundKey(
+      appState.lastMove,
+      appState.score
+    );
+
+  rerender();
+
+  if (!appState.online) {
+    return true;
+  }
+
+  try {
+    const success =
+      await submitReserve(
+        pieceCode,
+        target
+      );
+
+    if (!success) {
+      rollbackState(rollbackSnapshot);
+      return false;
+    }
+
+    return true;
+  } catch {
+    rollbackState(rollbackSnapshot);
+    return false;
+  }
+}
+
+function rollbackState(snapshot) {
+  if (!snapshot) {
+    return;
+  }
+
+  appState.fen = snapshot.fen;
+  setFen(snapshot.fen);
+  appState.lastMove = snapshot.lastMove;
+  appState.elixir = snapshot.elixir;
+  appState.score = snapshot.score;
+  appState.moveHistory = snapshot.moveHistory;
+  appState.clockTurn = snapshot.clockTurn;
+  appState.statusMessage =
+    "Move rejected by server";
+
+  rerender();
 }
 
 function rerender() {
-
   const boardElement =
     document.getElementById("board");
 
-  createBoard(
-    boardElement,
-    appState.fen,
-    appState.draggedFrom,
-    appState.selectedSquare,
-    appState.legalMoves,
-    appState.boardOrientation,
-    appState.lastMove
-  );
+  if (boardElement) {
+    createBoard(
+      boardElement,
+      appState.fen,
+      appState.draggedFrom,
+      appState.selectedSquare,
+      appState.legalMoves,
+      appState.boardOrientation,
+      appState.lastMove,
+      appState.premove
+    );
+  }
 
   const reserveElement =
     document.getElementById("reserve");
 
-  renderReserve(
-    reserveElement,
-    appState.reservePieces,
-    appState.selectedSource,
-    appState.elixir,
-    appState.playerColor
-  );
+  if (reserveElement) {
+    renderReserve(
+      reserveElement,
+      appState.reservePieces,
+      appState.selectedSource,
+      appState.elixir,
+      appState.playerColor
+    );
+  }
 
   const statusElement =
     document.getElementById("status");
@@ -551,10 +779,59 @@ function rerender() {
     statusElement.textContent =
       appState.statusMessage;
   }
+
+  onRerenderCallback?.();
+}
+
+export async function executePremove() {
+  if (!appState.premove || appState.gameOver) {
+    return;
+  }
+
+  const premove = appState.premove;
+  appState.premove = null;
+
+  if (premove.type === "move") {
+    const legalMoves = getLegalMoves(premove.from);
+    const isLegal = legalMoves.some(
+      move => move.to === premove.to
+    );
+
+    if (isLegal) {
+      await commitMove(
+        premove.from,
+        premove.to
+      );
+    } else {
+      rerender();
+    }
+  } else if (premove.type === "reserve") {
+    const cost =
+      RESERVE_COSTS[premove.pieceCode[1]] ||
+      Number.POSITIVE_INFINITY;
+
+    const hasElixir =
+      (appState.elixir?.[appState.playerColor] ?? 0) >= cost;
+
+    const isLegal =
+      canPlaceReserve(
+        appState.fen,
+        premove.pieceCode,
+        premove.target
+      );
+
+    if (hasElixir && isLegal) {
+      await commitReserve(
+        premove.pieceCode,
+        premove.target
+      );
+    } else {
+      rerender();
+    }
+  }
 }
 
 async function handleBoardClick(event) {
-
   if (appState.gameOver) {
     return;
   }
@@ -572,15 +849,14 @@ async function handleBoardClick(event) {
     );
 
   if (reservePiece) {
-
     const pieceCode =
       reservePiece.dataset.reserve;
 
-    if (!canControlColor(pieceCode[0])) {
+    if (!canControlPiece(pieceCode[0])) {
       return;
     }
 
-    if (!canAffordReserve(pieceCode)) {
+    if (isMyTurn() && !canAffordReserve(pieceCode)) {
       appState.statusMessage =
         "Not enough Elixir";
       rerender();
@@ -593,20 +869,13 @@ async function handleBoardClick(event) {
     appState.selectedSquare =
       null;
 
-    const board =
-      getBoard();
-
-    const color =
-      pieceCode[0];
-
     appState.legalMoves =
       getReserveSquares(
-        color,
-        board
+        pieceCode[0],
+        getBoard()
       );
 
     rerender();
-
     return;
   }
 
@@ -615,7 +884,13 @@ async function handleBoardClick(event) {
   const square =
     event.target.closest(".square");
 
-  if (!square) return;
+  if (!square) {
+    if (appState.premove) {
+      appState.premove = null;
+      rerender();
+    }
+    return;
+  }
 
   const coordinate =
     square.dataset.square;
@@ -636,7 +911,6 @@ async function handleBoardClick(event) {
   // ---------------- CLICK BOARD PIECE ----------------
 
   if (piece) {
-
     const pieceCode =
       piece.color +
       piece.type.toUpperCase();
@@ -648,48 +922,50 @@ async function handleBoardClick(event) {
       ) &&
       appState.selectedSource !== coordinate
     ) {
-      await commitMove(
-        appState.selectedSource,
-        coordinate
-      );
+      if (isMyTurn()) {
+        await commitMove(
+          appState.selectedSource,
+          coordinate
+        );
+      } else {
+        appState.premove = {
+          type: "move",
+          from: appState.selectedSource,
+          to: coordinate,
+        };
+      }
 
-      appState.selectedSource =
-        null;
-
-      appState.selectedSquare =
-        null;
-
+      appState.selectedSource = null;
+      appState.selectedSquare = null;
       appState.legalMoves = [];
-
       rerender();
-
       return;
     }
 
-    if (!canControlColor(piece.color)) {
+    if (!canControlPiece(piece.color)) {
+      if (appState.premove) {
+        appState.premove = null;
+        rerender();
+      }
       return;
     }
 
-    const legalMoves =
-      getLegalMoves(coordinate);
+    const legalMoves = isMyTurn()
+      ? getLegalMoves(coordinate)
+      : getHypotheticalMoves(coordinate, piece.color);
 
     if (legalMoves.length === 0) {
       return;
     }
 
-    appState.selectedSource =
-      coordinate;
-
-    appState.selectedSquare =
-      coordinate;
-
+    appState.selectedSource = coordinate;
+    appState.selectedSquare = coordinate;
     appState.legalMoves =
       legalMoves.map(
         move => move.to
       );
 
     rerender();
-
     return;
   }
 
@@ -701,36 +977,36 @@ async function handleBoardClick(event) {
       "reserve:"
     )
   ) {
-
     const pieceCode =
       appState.selectedSource
         .split(":")[1];
 
-    const legal =
-      canPlaceReserve(
-        appState.fen,
-        pieceCode,
-        coordinate
-      );
+    if (isMyTurn()) {
+      const legal =
+        canPlaceReserve(
+          appState.fen,
+          pieceCode,
+          coordinate
+        );
 
-    if (legal) {
-
-      await commitReserve(
+      if (legal) {
+        await commitReserve(
+          pieceCode,
+          coordinate
+        );
+      }
+    } else {
+      appState.premove = {
+        type: "reserve",
         pieceCode,
-        coordinate
-      );
+        target: coordinate,
+      };
     }
 
-    appState.selectedSource =
-      null;
-
-    appState.selectedSquare =
-      null;
-
+    appState.selectedSource = null;
+    appState.selectedSquare = null;
     appState.legalMoves = [];
-
     rerender();
-
     return;
   }
 
@@ -741,21 +1017,25 @@ async function handleBoardClick(event) {
       coordinate
     )
   ) {
-
-    await commitMove(
+    if (isMyTurn()) {
+      await commitMove(
         appState.selectedSource,
         coordinate
       );
+    } else {
+      appState.premove = {
+        type: "move",
+        from: appState.selectedSource,
+        to: coordinate,
+      };
+    }
+  } else if (appState.premove) {
+    appState.premove = null;
   }
 
   // clear selection
-  appState.selectedSource =
-    null;
-
-  appState.selectedSquare =
-    null;
-
+  appState.selectedSource = null;
+  appState.selectedSquare = null;
   appState.legalMoves = [];
-
   rerender();
 }

@@ -48,13 +48,7 @@ body {
   line-height: 1.1;
 }
 
-.rules-page {
-  width: min(92vw, 720px);
-
-  max-height: calc(100vh - 48px);
-  overflow: auto;
-}
-
+.rules-page,
 .changelog-page {
   width: min(92vw, 720px);
   max-height: none;
@@ -792,6 +786,8 @@ button:disabled {
 .piece {
   width: 80%;
   height: 80%;
+  position: relative;
+  z-index: 3;
 
   cursor: grab;
 
@@ -878,6 +874,24 @@ button:disabled {
   box-shadow: inset 0 0 0 4px rgba(255, 210, 64, 0.85);
 }
 
+.premove-square::before {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border-radius: 8px;
+  background: rgba(96, 165, 250, 0.35);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.light.premove-square::before {
+  background: rgba(96, 165, 250, 0.32);
+}
+
+.dark.premove-square::before {
+  background: rgba(99, 128, 250, 0.36);
+}
+
 .king-in-check {
   box-shadow: inset 0 0 0 5px rgba(220, 38, 38, 0.95);
 }
@@ -897,24 +911,21 @@ button:disabled {
 .legal-move::after,
 .legal-capture::after {
   content: "";
-
   position: absolute;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .legal-move::after {
   width: 22px;
   height: 22px;
-
   border-radius: 50%;
-
   background: rgba(0, 0, 0, 0.28);
 }
 
 .legal-capture::after {
   inset: 8%;
-
   border-radius: 8px;
-
   background: rgba(248, 113, 113, 0.42);
 }
 
