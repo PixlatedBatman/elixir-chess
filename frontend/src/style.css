@@ -796,8 +796,8 @@ button:disabled {
 .history-item {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
+  gap: 3px;
+  padding: 3px 6px;
 
   background: #1e1e1e;
   border: 1px solid #3a3a3a;
@@ -810,6 +810,31 @@ button:disabled {
 
 .history-turn {
   color: #8e8e8e;
+  font-weight: 700;
+  padding: 0 3px;
+}
+
+.history-move {
+  background: transparent;
+  border: 0;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  min-height: unset;
+  line-height: 1.2;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.history-move:hover {
+  background: #333333;
+  filter: none;
+}
+
+.history-move.active-move {
+  background: #f0d9b5;
+  color: #111111;
   font-weight: 700;
 }
 

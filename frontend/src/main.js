@@ -2,6 +2,7 @@ import "./style.css";
 
 import {
   getFen,
+  getPositionAtHistoryIndex,
 } from "./game";
 
 import {
@@ -763,22 +764,110 @@ homeButton.addEventListener(
 historyScrollLeftButton.addEventListener(
   "click",
   () => {
-    moveHistoryElement.scrollBy({
-      left: -120,
-      behavior: "smooth",
-    });
+    const moves = appState.moveHistory || [];
+    if (moves.length === 0) {
+      moveHistoryElement.scrollBy({
+        left: -120,
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    const currentIndex =
+      appState.selectedHistoryIndex === null
+        ? moves.length - 1
+        : appState.selectedHistoryIndex;
+
+    if (currentIndex > 0) {
+      goToHistoryIndex(currentIndex - 1);
+    } else {
+      goToHistoryIndex(-1);
+    }
   }
 );
 
 historyScrollRightButton.addEventListener(
   "click",
   () => {
-    moveHistoryElement.scrollBy({
-      left: 120,
-      behavior: "smooth",
-    });
+    const moves = appState.moveHistory || [];
+    if (moves.length === 0) {
+      moveHistoryElement.scrollBy({
+        left: 120,
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    const currentIndex =
+      appState.selectedHistoryIndex === null
+        ? moves.length - 1
+        : appState.selectedHistoryIndex;
+
+    if (currentIndex < moves.length - 1) {
+      goToHistoryIndex(currentIndex + 1);
+    } else {
+      goToHistoryIndex(null);
+    }
   }
 );
+
+moveHistoryElement.addEventListener(
+  "click",
+  (event) => {
+    const moveBtn = event.target.closest("[data-history-index]");
+    if (moveBtn) {
+      const index = Number(moveBtn.dataset.historyIndex);
+      if (index === (appState.moveHistory?.length ?? 0) - 1) {
+        appState.selectedHistoryIndex = null;
+      } else {
+        appState.selectedHistoryIndex = index;
+      }
+      renderApp();
+    }
+  }
+);
+
+window.addEventListener("keydown", (event) => {
+  if (
+    event.target.tagName === "INPUT" ||
+    event.target.tagName === "TEXTAREA" ||
+    !appState.roomId
+  ) {
+    return;
+  }
+
+  const moves = appState.moveHistory || [];
+  if (moves.length === 0) {
+    return;
+  }
+
+  const currentIndex =
+    appState.selectedHistoryIndex === null
+      ? moves.length - 1
+      : appState.selectedHistoryIndex;
+
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    if (currentIndex > 0) {
+      goToHistoryIndex(currentIndex - 1);
+    } else {
+      goToHistoryIndex(-1);
+    }
+  } else if (event.key === "ArrowRight") {
+    event.preventDefault();
+    if (currentIndex < moves.length - 1) {
+      goToHistoryIndex(currentIndex + 1);
+    } else {
+      goToHistoryIndex(null);
+    }
+  } else if (event.key === "Home") {
+    event.preventDefault();
+    goToHistoryIndex(-1);
+  } else if (event.key === "End") {
+    event.preventDefault();
+    goToHistoryIndex(null);
+  }
+});
 
 gameOverContinueButton.addEventListener(
   "click",
@@ -1039,27 +1128,45 @@ function renderLobby() {
 }
 
 function renderGame() {
+  const isViewingHistory =
+    appState.selectedHistoryIndex !== null &&
+    appState.selectedHistoryIndex < (appState.moveHistory?.length ?? 0) - 1;
+
+  let displayFen = appState.fen;
+  let displayLastMove = appState.lastMove;
+
+  if (appState.selectedHistoryIndex !== null) {
+    const historical = getPositionAtHistoryIndex(
+      appState.moveHistory,
+      appState.selectedHistoryIndex
+    );
+    displayFen = historical.fen;
+    displayLastMove = historical.lastMove;
+  }
+
   createBoard(
     boardElement,
-    appState.fen,
-    appState.draggedFrom,
-    appState.selectedSquare,
-    appState.legalMoves,
+    displayFen,
+    isViewingHistory ? null : appState.draggedFrom,
+    isViewingHistory ? null : appState.selectedSquare,
+    isViewingHistory ? [] : appState.legalMoves,
     appState.boardOrientation,
-    appState.lastMove,
-    appState.premove
+    displayLastMove,
+    isViewingHistory ? null : appState.premove
   );
 
   renderReserve(
     reserveElement,
     appState.reservePieces,
-    appState.selectedSource,
+    isViewingHistory ? null : appState.selectedSource,
     appState.elixir,
     appState.playerColor
   );
 
   statusElement.textContent =
-    appState.statusMessage;
+    isViewingHistory
+      ? `Viewing move ${appState.selectedHistoryIndex === -1 ? "start" : (appState.moveHistory?.[appState.selectedHistoryIndex]?.turnNumber ? `${appState.moveHistory[appState.selectedHistoryIndex].turnNumber}.${appState.moveHistory[appState.selectedHistoryIndex].color === "w" ? "" : ".."}${appState.moveHistory[appState.selectedHistoryIndex].notation}` : appState.selectedHistoryIndex + 1)}`
+      : appState.statusMessage;
 
   renderElixir();
 
@@ -1244,34 +1351,76 @@ function renderMoveHistory() {
   const rows =
     new Map();
 
-  for (const move of moves) {
+  for (let i = 0; i < moves.length; i++) {
+    const move = moves[i];
     if (!rows.has(move.turnNumber)) {
       rows.set(
         move.turnNumber,
         {
-          w: "",
-          b: "",
+          w: null,
+          b: null,
         }
       );
     }
 
-    rows.get(move.turnNumber)[move.color] =
-      move.notation;
+    rows.get(move.turnNumber)[move.color] = {
+      notation: move.notation,
+      index: i,
+    };
   }
+
+  const activeIdx =
+    appState.selectedHistoryIndex === null
+      ? moves.length - 1
+      : appState.selectedHistoryIndex;
 
   moveHistoryElement.innerHTML =
     Array.from(rows.entries())
       .map(([turnNumber, row]) => `
         <div class="history-item">
           <span class="history-turn">${turnNumber}.</span>
-          <span class="white-move">${row.w || ""}</span>
-          ${row.b ? `<span class="black-move">${row.b}</span>` : ""}
+          ${
+            row.w
+              ? `<button type="button" class="history-move white-move ${row.w.index === activeIdx ? "active-move" : ""}" data-history-index="${row.w.index}">${row.w.notation}</button>`
+              : ""
+          }
+          ${
+            row.b
+              ? `<button type="button" class="history-move black-move ${row.b.index === activeIdx ? "active-move" : ""}" data-history-index="${row.b.index}">${row.b.notation}</button>`
+              : ""
+          }
         </div>
       `)
       .join("");
 
-  moveHistoryElement.scrollLeft =
-    moveHistoryElement.scrollWidth;
+  const activeMoveBtn =
+    moveHistoryElement.querySelector(".active-move");
+
+  if (activeMoveBtn) {
+    activeMoveBtn.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "nearest",
+    });
+  } else if (appState.selectedHistoryIndex === null) {
+    moveHistoryElement.scrollLeft =
+      moveHistoryElement.scrollWidth;
+  }
+}
+
+function goToHistoryIndex(index) {
+  const moves = appState.moveHistory || [];
+  if (moves.length === 0) {
+    return;
+  }
+
+  if (index === null || index >= moves.length - 1) {
+    appState.selectedHistoryIndex = null;
+  } else {
+    appState.selectedHistoryIndex = Math.max(-1, index);
+  }
+
+  renderApp();
 }
 
 function renderGameOver() {

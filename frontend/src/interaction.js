@@ -150,6 +150,12 @@ function startDragging(event) {
     return;
   }
 
+  if (appState.selectedHistoryIndex !== null) {
+    appState.selectedHistoryIndex = null;
+    rerender();
+    return;
+  }
+
   event.preventDefault();
 
   const reservePieceCode =
@@ -896,6 +902,12 @@ export async function executePremove() {
 
 async function handleBoardClick(event) {
   if (appState.gameOver) {
+    return;
+  }
+
+  if (appState.selectedHistoryIndex !== null) {
+    appState.selectedHistoryIndex = null;
+    rerender();
     return;
   }
 

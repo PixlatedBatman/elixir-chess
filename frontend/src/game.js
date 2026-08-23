@@ -147,3 +147,60 @@ function finishReserveTurn() {
     fenParts.join(" ")
   );
 }
+
+export function getPositionAtHistoryIndex(moveHistory, index) {
+  const replayGame = new Chess();
+  if (!moveHistory || moveHistory.length === 0 || index < 0) {
+    return {
+      fen: replayGame.fen(),
+      lastMove: null,
+    };
+  }
+
+  const targetIndex = Math.min(index, moveHistory.length - 1);
+  let lastMove = null;
+
+  for (let i = 0; i <= targetIndex; i++) {
+    const move = moveHistory[i];
+    if (move.type === "reserve") {
+      const pieceCode =
+        move.pieceCode || `${move.color}${move.notation?.[0] || "P"}`;
+      replayGame.put(
+        {
+          type: pieceCode[1].toLowerCase(),
+          color: move.color,
+        },
+        move.to
+      );
+      const fenParts = replayGame.fen().split(" ");
+      const currentTurn = fenParts[1];
+      fenParts[1] = currentTurn === "w" ? "b" : "w";
+      fenParts[3] = "-";
+      if (currentTurn === "b") {
+        fenParts[5] = String(Number(fenParts[5]) + 1);
+      }
+      replayGame.load(fenParts.join(" "));
+      lastMove = {
+        type: "reserve",
+        squares: [move.to],
+      };
+    } else {
+      const res = replayGame.move(
+        move.from && move.to
+          ? { from: move.from, to: move.to, promotion: "q" }
+          : move.notation
+      );
+      if (res) {
+        lastMove = {
+          type: "move",
+          squares: [res.from, res.to],
+        };
+      }
+    }
+  }
+
+  return {
+    fen: replayGame.fen(),
+    lastMove,
+  };
+}

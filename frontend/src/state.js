@@ -61,4 +61,5 @@ export const appState = {
   lastSoundKey: null,
   premove: null,
   hasPlayedLowTimeWarning: false,
+  selectedHistoryIndex: null,
 };
