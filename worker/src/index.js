@@ -579,7 +579,7 @@ export class GameRoom {
     }
     updateGameOver(state);
     state.clockUpdatedAt =
-      Date.now();
+      state.gameOver ? null : Date.now();
 
     await this.saveState(state);
     await this.setClockAlarm(state);
@@ -747,7 +747,7 @@ export class GameRoom {
     state.elixir[role] -= cost;
     updateGameOver(state);
     state.clockUpdatedAt =
-      Date.now();
+      state.gameOver ? null : Date.now();
 
     await this.saveState(state);
     await this.setClockAlarm(state);
@@ -802,13 +802,17 @@ export class GameRoom {
       );
     }
 
+    syncClock(state);
+
     state.gameOver = {
       reason: "resignation",
       winner: oppositeColor(role),
     };
     state.drawOffer = null;
+    state.clockUpdatedAt = null;
 
     await this.saveState(state);
+    await this.setClockAlarm(state);
 
     this.broadcast(state);
 
@@ -870,11 +874,14 @@ export class GameRoom {
         );
       }
 
+      syncClock(state);
+
       state.gameOver = {
         reason: "draw",
         winner: null,
       };
       state.drawOffer = null;
+      state.clockUpdatedAt = null;
     } else if (body.response === "decline") {
       if (state.drawOffer !== oppositeColor(role)) {
         return json(
@@ -1583,6 +1590,7 @@ function syncClock(state) {
       reason: "timeout",
       winner: oppositeColor(turn),
     };
+    state.clockUpdatedAt = null;
   }
 }
 
