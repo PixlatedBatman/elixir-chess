@@ -155,6 +155,11 @@ document.querySelector("#app").innerHTML = `
         <h2>Draws and Resignation</h2>
         <p>A player may resign to end the game immediately. A player may also offer a draw; the game ends as a draw only if the opponent accepts it.</p>
       </div>
+
+      <div class="rules-section">
+        <h2>Premoves</h2>
+        <p>You can queue a piece move or a reserve piece placement while it is your opponent's turn. Your queued premove will be highlighted in blue and will execute automatically the instant your opponent finishes their turn, provided the move remains legal. If the move is no longer legal or you have insufficient Elixir, the premove is safely cancelled. You can cancel a premove at any time by right-clicking or tapping an empty square.</p>
+      </div>
     </section>
 
     <section id="changelog-view"
