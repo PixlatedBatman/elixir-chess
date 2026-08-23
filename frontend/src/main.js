@@ -189,6 +189,21 @@ document.querySelector("#app").innerHTML = `
 
       <div class="changelog-entry">
         <div class="changelog-entry-header">
+          <h2>Update v1.9</h2>
+          <span class="changelog-date">August 24, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Home Menu Redesign:</strong> Streamlined the home screen into a clean 4-button menu (Play Online, Play with a Friend, Rules, Contact) with an expandable private friend room panel and custom room code entry.</li>
+          <li><strong>Interactive Move History:</strong> Clickable move chips, ribbon navigation buttons, and keyboard arrow navigation (<code>←</code>/<code>→</code>/<code>Home</code>/<code>End</code>) to review past board positions with smooth return to live play.</li>
+          <li><strong>Audio Overhaul:</strong> Added distinct sound effects for Check, Castling, Illegal moves / failed premoves, and a 30-second low-time warning.</li>
+          <li><strong>Play Again & Rematch Popup:</strong> In-place transition replacing Offer Draw and Resign with Play Again on game over, complete with an interactive Accept/Decline rematch popup and automatic color swapping.</li>
+          <li><strong>Pawn Diagonal Premoves:</strong> Pawns can now queue diagonal premoves into empty squares in anticipation of enemy piece movements.</li>
+          <li><strong>Clock & Matchmaking Fixes:</strong> Clocks accurately freeze at the exact moment of resignation/draw/checkmate, and private friend rooms are strictly isolated from public matchmaking.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
           <h2>Update v1.8.1 (Bug Fix)</h2>
           <span class="changelog-date">August 23, 2026</span>
         </div>
