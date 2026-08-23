@@ -30,6 +30,8 @@ export function getHypotheticalMoves(square, color) {
     const currentFen = game.fen();
     const fenParts = currentFen.split(" ");
 
+    let moves = [];
+
     if (fenParts[1] !== color) {
       fenParts[1] = color;
       fenParts[3] = "-";
@@ -37,16 +39,47 @@ export function getHypotheticalMoves(square, color) {
       const tempGame =
         new Chess(fenParts.join(" "));
 
-      return tempGame.moves({
+      moves = tempGame.moves({
+        square,
+        verbose: true,
+      });
+    } else {
+      moves = game.moves({
         square,
         verbose: true,
       });
     }
 
-    return game.moves({
-      square,
-      verbose: true,
-    });
+    // Pawn diagonal premove exception:
+    // A pawn can premove diagonally forward-left and forward-right
+    // in anticipation of an opponent piece moving to that square.
+    const piece = game.get(square);
+    if (piece && piece.type === "p" && piece.color === color) {
+      const file = square.charCodeAt(0) - 97;
+      const rank = parseInt(square[1]);
+      const forwardRank = color === "w" ? rank + 1 : rank - 1;
+
+      if (forwardRank >= 1 && forwardRank <= 8) {
+        const diagonalFiles = [file - 1, file + 1].filter(
+          f => f >= 0 && f <= 7
+        );
+
+        for (const df of diagonalFiles) {
+          const targetSquare = `${String.fromCharCode(97 + df)}${forwardRank}`;
+          if (!moves.some(m => m.to === targetSquare)) {
+            moves.push({
+              from: square,
+              to: targetSquare,
+              color,
+              piece: "p",
+              flags: "c",
+            });
+          }
+        }
+      }
+    }
+
+    return moves;
   } catch {
     return [];
   }

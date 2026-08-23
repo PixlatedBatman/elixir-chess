@@ -158,7 +158,7 @@ document.querySelector("#app").innerHTML = `
 
       <div class="rules-section">
         <h2>Premoves</h2>
-        <p>You can queue a piece move or a reserve piece placement while it is your opponent's turn. Your queued premove will be highlighted in blue and will execute automatically the instant your opponent finishes their turn, provided the move remains legal. If the move is no longer legal or you have insufficient Elixir, the premove is safely cancelled. You can cancel a premove at any time by right-clicking or tapping an empty square.</p>
+        <p>You can queue a piece move or a reserve piece placement while it is your opponent's turn. Pawns may also be premoved to diagonal squares in anticipation of an opponent piece moving there. Your queued premove will be highlighted in blue and will execute automatically the instant your opponent finishes their turn, provided the move remains legal. If the move is no longer legal or you have insufficient Elixir, the premove is safely cancelled. You can cancel a premove at any time by right-clicking or tapping an empty square.</p>
       </div>
     </section>
 

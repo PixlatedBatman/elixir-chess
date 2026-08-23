@@ -367,6 +367,9 @@ async function stopDragging(event) {
     const pieceCode =
       appState.draggedPiece;
 
+    const isTargetAllowed =
+      appState.legalMoves.includes(target);
+
     cleanupDrag();
 
     if (isMyTurn()) {
@@ -385,12 +388,14 @@ async function stopDragging(event) {
       } else {
         rerender();
       }
-    } else {
+    } else if (isTargetAllowed) {
       appState.premove = {
         type: "reserve",
         pieceCode,
         target,
       };
+      rerender();
+    } else {
       rerender();
     }
 
@@ -407,6 +412,9 @@ async function stopDragging(event) {
   const from =
     appState.draggedFrom;
 
+  const isTargetAllowed =
+    appState.legalMoves.includes(target);
+
   cleanupDrag();
 
   if (isMyTurn()) {
@@ -414,12 +422,14 @@ async function stopDragging(event) {
       from,
       target
     );
-  } else {
+  } else if (isTargetAllowed) {
     appState.premove = {
       type: "move",
       from,
       to: target,
     };
+    rerender();
+  } else {
     rerender();
   }
 }
