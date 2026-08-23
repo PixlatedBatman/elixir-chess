@@ -174,6 +174,17 @@ document.querySelector("#app").innerHTML = `
 
       <div class="changelog-entry">
         <div class="changelog-entry-header">
+          <h2>Update v1.8</h2>
+          <span class="changelog-date">August 23, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Optimistic Moves & 0ms Latency:</strong> Immediate client-side move and reserve execution with instant board updates, sound triggers, and HUD synchronization, supported by automatic server rollback protection.</li>
+          <li><strong>Premove System:</strong> Queue piece moves and reserve piece drops during your opponent's turn, auto-executing instantly at 0ms when the opponent moves with subtle blue square highlights tailored for light and dark squares.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
           <h2>Update v1.7</h2>
           <span class="changelog-date">August 22, 2026</span>
         </div>
