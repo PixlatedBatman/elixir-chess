@@ -29,6 +29,12 @@
   position: relative;
 }
 
+/* Standalone, not scoped to .pl-square: the square class name is injectable
+   and the game overrides it to `square`. */
+.pl-occupied {
+  cursor: grab;
+}
+
 .pl-square.light {
   background: #f0d9b5;
 }

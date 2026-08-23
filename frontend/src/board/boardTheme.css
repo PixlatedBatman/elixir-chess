@@ -24,17 +24,12 @@
   --pl-piece-size: 80%;
 }
 
-/* The legacy board brightened the whole square (piece included) on hover.
-   Pieces now live in a sibling layer, so brighten them in step. */
-.board.board-shell:hover .pl-piece-art {
-  transition:
-    transform 180ms var(--pl-ease),
-    filter 180ms linear;
-}
-
-/* Reserve tray pieces are still real <img> elements dragged with a clone,
-   so they keep the original `.piece` cursor affordance. Board pieces are
-   inert, so the grab cursor belongs on the square underneath. */
-.board.board-shell .square {
-  cursor: default;
-}
+/*
+ * The grab cursor comes from `.pl-occupied` in pieceLayer.css, since board
+ * pieces are inert and cannot carry it themselves.
+ *
+ * One remaining difference from the legacy board: `.square:hover` brightens
+ * the square but no longer brightens the piece with it, because the piece is
+ * in a sibling layer rather than a child. Drop the `.square:hover` rule in
+ * style.css if the halo reads badly.
+ */

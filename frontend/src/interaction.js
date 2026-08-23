@@ -74,6 +74,13 @@ let activePointerId = null;
 // tray drags still use the floating clone, so this stays null for those.
 let dragEntry = null;
 
+// A drag that ends on a different square still produces a trailing `click`,
+// whose target is the common ancestor of the press and release. The old board
+// never saw it because re-rendering mid-drag detached the pressed element and
+// the browser dropped the click; pieces now persist, so it has to be swallowed
+// explicitly or it lands in handleBoardClick and undoes the drop.
+let suppressNextClick = false;
+
 // ---------------- INIT ----------------
 
 export function initializeInteractions(
@@ -146,6 +153,10 @@ function startDragging(event) {
   ) {
     return;
   }
+
+  // Clearing here (rather than after consuming it) guarantees a flag left
+  // over from a gesture that never produced a click cannot eat a later one.
+  suppressNextClick = false;
 
   if (appState.gameOver) {
     return;
@@ -391,6 +402,11 @@ async function stopDragging(event) {
 
   const target =
     resolveDropSquare(event);
+
+  // Anything but a tap in place is a drag, and its trailing click is spurious.
+  if (target !== appState.draggedFrom) {
+    suppressNextClick = true;
+  }
 
   // dropped nowhere
   if (!target) {
@@ -1033,6 +1049,11 @@ export async function executePremove() {
 }
 
 async function handleBoardClick(event) {
+  if (suppressNextClick) {
+    suppressNextClick = false;
+    return;
+  }
+
   if (appState.gameOver) {
     return;
   }

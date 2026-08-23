@@ -23,6 +23,7 @@ export const DEFAULT_CLASS_NAMES = {
   capture: "pl-capture",
   premove: "pl-premove",
   check: "pl-check",
+  occupied: "pl-occupied",
 };
 
 // ---------------- POSITION HELPERS ----------------
@@ -545,6 +546,14 @@ export class PieceLayer {
       square.classList.toggle(
         this.classes.check,
         coordinate === check
+      );
+
+      // Pieces are inert, so the grab affordance has to live on the square
+      // underneath them. Matches the old `.piece { cursor: grab }`, which
+      // also applied regardless of colour.
+      square.classList.toggle(
+        this.classes.occupied,
+        this.pieces.has(coordinate)
       );
     }
   }
