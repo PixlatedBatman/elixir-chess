@@ -1260,18 +1260,6 @@ async function updateWaitingRoom(
   const payload =
     await response.json();
 
-  if (
-    payload.players?.player1 &&
-    !payload.players?.player2
-  ) {
-    await setWaitingRoomFromRoomId(
-      env,
-      roomId
-    );
-
-    return;
-  }
-
   if (payload.players?.player2) {
     await clearWaitingRoomFromRoomId(
       env,
@@ -1317,24 +1305,6 @@ async function clearWaitingRoom(
   await matchmaker.fetch(
     new Request(
       `${url.origin}/clear`,
-      {
-        method: "POST",
-        body: JSON.stringify({ roomId }),
-      }
-    )
-  );
-}
-
-async function setWaitingRoomFromRoomId(
-  env,
-  roomId
-) {
-  const matchmaker =
-    getMatchmaker(env);
-
-  await matchmaker.fetch(
-    new Request(
-      "https://internal/waiting",
       {
         method: "POST",
         body: JSON.stringify({ roomId }),
