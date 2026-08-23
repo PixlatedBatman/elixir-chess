@@ -31,6 +31,7 @@ import {
 
 import {
   initializeSound,
+  playLowTimeSound,
 } from "./sound";
 
 document.querySelector("#app").innerHTML = `
@@ -1154,6 +1155,29 @@ function renderClocks() {
     appState.clockTurn === "b" &&
     !appState.gameOver
   );
+
+  whiteClockElement.classList.toggle(
+    "low-time",
+    clocks.w <= 30000 && !appState.gameOver
+  );
+
+  blackClockElement.classList.toggle(
+    "low-time",
+    clocks.b <= 30000 && !appState.gameOver
+  );
+
+  if (
+    !appState.gameOver &&
+    (appState.playerColor === "w" || appState.playerColor === "b") &&
+    appState.clockTurn === appState.playerColor &&
+    !appState.hasPlayedLowTimeWarning
+  ) {
+    const myTime = clocks[appState.playerColor];
+    if (myTime > 0 && myTime <= 30000) {
+      appState.hasPlayedLowTimeWarning = true;
+      playLowTimeSound();
+    }
+  }
 }
 
 function getDisplayClocks() {

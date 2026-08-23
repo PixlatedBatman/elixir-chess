@@ -89,6 +89,10 @@ export function getFen() {
   return game.fen();
 }
 
+export function inCheck() {
+  return game.inCheck();
+}
+
 export function setFen(fen) {
   game.load(fen);
 }

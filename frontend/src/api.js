@@ -4,6 +4,7 @@ import {
 
 import {
   setFen,
+  inCheck,
 } from "./game";
 
 import {
@@ -405,12 +406,22 @@ function playSoundsForServerState(
     appState.lastSoundKey =
       moveSoundKey;
 
-    playMoveSound(
+    const isCheck = inCheck();
+    const lastHistoryMove =
+      payload.moveHistory?.[payload.moveHistory.length - 1];
+    const isCastle =
+      lastHistoryMove?.notation?.startsWith("O-O");
+    const isCapture =
       didScoreIncrease(
         previousState.score,
         payload.score
-      )
-    );
+      );
+
+    playMoveSound({
+      isCheck,
+      isCastle,
+      isCapture,
+    });
   }
 }
 
