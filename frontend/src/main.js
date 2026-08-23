@@ -179,6 +179,16 @@ document.querySelector("#app").innerHTML = `
 
       <div class="changelog-entry">
         <div class="changelog-entry-header">
+          <h2>Update v1.8.1 (Bug Fix)</h2>
+          <span class="changelog-date">August 23, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>UI Bug Fix:</strong> Fixed an issue where move dots and capture highlights lingered after moving; they now clear instantly at 0ms with immediate turn status updates.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
           <h2>Update v1.8</h2>
           <span class="changelog-date">August 23, 2026</span>
         </div>

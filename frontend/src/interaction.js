@@ -364,31 +364,36 @@ async function stopDragging(event) {
       "reserve:"
     )
   ) {
+    const pieceCode =
+      appState.draggedPiece;
+
+    cleanupDrag();
+
     if (isMyTurn()) {
       const legal =
         canPlaceReserve(
           appState.fen,
-          appState.draggedPiece,
+          pieceCode,
           target
         );
 
       if (legal) {
         await commitReserve(
-          appState.draggedPiece,
+          pieceCode,
           target
         );
+      } else {
+        rerender();
       }
     } else {
       appState.premove = {
         type: "reserve",
-        pieceCode:
-          appState.draggedPiece,
+        pieceCode,
         target,
       };
+      rerender();
     }
 
-    cleanupDrag();
-    rerender();
     return;
   }
 
@@ -399,22 +404,24 @@ async function stopDragging(event) {
     return;
   }
 
+  const from =
+    appState.draggedFrom;
+
+  cleanupDrag();
+
   if (isMyTurn()) {
     await commitMove(
-      appState.draggedFrom,
+      from,
       target
     );
   } else {
     appState.premove = {
       type: "move",
-      from: appState.draggedFrom,
+      from,
       to: target,
     };
+    rerender();
   }
-
-  cleanupDrag();
-
-  rerender();
 }
 
 // ---------------- HELPERS ----------------
@@ -494,6 +501,10 @@ function isMyTurn() {
 }
 
 async function commitMove(from, to) {
+  appState.selectedSource = null;
+  appState.selectedSquare = null;
+  appState.legalMoves = [];
+
   const move =
     tryMove(
       from,
@@ -569,6 +580,10 @@ async function commitMove(from, to) {
 
   appState.clockTurn = getTurn();
 
+  const myRoleLabel = role === "w" ? "White" : "Black";
+  const nextTurnLabel = appState.clockTurn === "w" ? "White" : "Black";
+  appState.statusMessage = `${myRoleLabel} player. ${nextTurnLabel} to move.`;
+
   playMoveSound(isCapture);
 
   appState.lastSoundKey =
@@ -606,6 +621,10 @@ async function commitReserve(
   pieceCode,
   target
 ) {
+  appState.selectedSource = null;
+  appState.selectedSquare = null;
+  appState.legalMoves = [];
+
   const role =
     pieceCode[0];
 
@@ -690,6 +709,10 @@ async function commitReserve(
   }
 
   appState.clockTurn = getTurn();
+
+  const myRoleLabel = role === "w" ? "White" : "Black";
+  const nextTurnLabel = appState.clockTurn === "w" ? "White" : "Black";
+  appState.statusMessage = `${myRoleLabel} player. ${nextTurnLabel} to move.`;
 
   playMoveSound(false);
 
@@ -922,23 +945,25 @@ async function handleBoardClick(event) {
       ) &&
       appState.selectedSource !== coordinate
     ) {
+      const source = appState.selectedSource;
+      appState.selectedSource = null;
+      appState.selectedSquare = null;
+      appState.legalMoves = [];
+
       if (isMyTurn()) {
         await commitMove(
-          appState.selectedSource,
+          source,
           coordinate
         );
       } else {
         appState.premove = {
           type: "move",
-          from: appState.selectedSource,
+          from: source,
           to: coordinate,
         };
+        rerender();
       }
 
-      appState.selectedSource = null;
-      appState.selectedSquare = null;
-      appState.legalMoves = [];
-      rerender();
       return;
     }
 
@@ -981,6 +1006,10 @@ async function handleBoardClick(event) {
       appState.selectedSource
         .split(":")[1];
 
+    appState.selectedSource = null;
+    appState.selectedSquare = null;
+    appState.legalMoves = [];
+
     if (isMyTurn()) {
       const legal =
         canPlaceReserve(
@@ -994,6 +1023,8 @@ async function handleBoardClick(event) {
           pieceCode,
           coordinate
         );
+      } else {
+        rerender();
       }
     } else {
       appState.premove = {
@@ -1001,12 +1032,9 @@ async function handleBoardClick(event) {
         pieceCode,
         target: coordinate,
       };
+      rerender();
     }
 
-    appState.selectedSource = null;
-    appState.selectedSquare = null;
-    appState.legalMoves = [];
-    rerender();
     return;
   }
 
@@ -1017,18 +1045,25 @@ async function handleBoardClick(event) {
       coordinate
     )
   ) {
+    const source = appState.selectedSource;
+    appState.selectedSource = null;
+    appState.selectedSquare = null;
+    appState.legalMoves = [];
+
     if (isMyTurn()) {
       await commitMove(
-        appState.selectedSource,
+        source,
         coordinate
       );
     } else {
       appState.premove = {
         type: "move",
-        from: appState.selectedSource,
+        from: source,
         to: coordinate,
       };
+      rerender();
     }
+    return;
   } else if (appState.premove) {
     appState.premove = null;
   }
