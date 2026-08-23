@@ -43,19 +43,14 @@ document.querySelector("#app").innerHTML = `
         <p class="byline">Made by Karthik Kashyap</p>
 
         <div class="actions home-actions">
-          <button id="create-game"
+          <button id="play-online-button"
               type="button">
-            Create Game
+            Play Online
           </button>
 
-          <button id="join-game-home"
+          <button id="play-friend-button"
               type="button">
-            Join Game
-          </button>
-
-          <button id="join-existing-home"
-              type="button">
-            Join Existing Room
+            Play with a Friend
           </button>
 
           <button id="rules-button"
@@ -69,23 +64,35 @@ document.querySelector("#app").innerHTML = `
           </button>
         </div>
 
-        <form id="existing-room-form"
-            class="room-entry hidden">
-          <label for="existing-room-input">Room number</label>
+        <div id="friend-panel"
+            class="info-panel friend-panel hidden">
+          <h2>Play with a Friend</h2>
+          <button id="create-private-room-btn"
+              type="button"
+              class="friend-create-btn">
+            Create Private Room
+          </button>
 
-          <div class="room-entry-row">
-            <input id="existing-room-input"
-                name="room"
-                autocomplete="off"
-                inputmode="text"
-                placeholder="Enter room number" />
-
-            <button type="submit">Enter</button>
+          <div class="friend-divider">
+            <span>or enter room code</span>
           </div>
 
-          <p id="existing-room-message"
-              class="form-message"></p>
-        </form>
+          <form id="existing-room-form"
+              class="friend-room-form">
+            <div class="room-entry-row">
+              <input id="existing-room-input"
+                  name="room"
+                  autocomplete="off"
+                  inputmode="text"
+                  placeholder="Enter room number" />
+
+              <button type="submit">Join</button>
+            </div>
+
+            <p id="existing-room-message"
+                class="form-message"></p>
+          </form>
+        </div>
 
         <div id="contact-panel"
             class="info-panel hidden">
@@ -606,6 +613,9 @@ const existingRoomMessage =
 const contactPanel =
   document.getElementById("contact-panel");
 
+const friendPanel =
+  document.getElementById("friend-panel");
+
 appState.fen = getFen();
 appState.roomId = getRoomId();
 
@@ -639,36 +649,36 @@ setOnRerenderCallback(
 initializeSound();
 
 document
-  .getElementById("create-game")
-  .addEventListener(
-    "click",
-    createGame
-  );
-
-document
-  .getElementById("join-game-home")
-  .addEventListener(
+  .getElementById("play-online-button")
+  ?.addEventListener(
     "click",
     joinOpenGame
   );
 
 document
-  .getElementById("join-existing-home")
-  .addEventListener(
+  .getElementById("play-friend-button")
+  ?.addEventListener(
     "click",
-    showExistingRoomForm
+    () => toggleHomePanel(friendPanel)
+  );
+
+document
+  .getElementById("create-private-room-btn")
+  ?.addEventListener(
+    "click",
+    createGame
   );
 
 document
   .getElementById("rules-button")
-  .addEventListener(
+  ?.addEventListener(
     "click",
     goToRules
   );
 
 document
   .getElementById("contact-button")
-  .addEventListener(
+  ?.addEventListener(
     "click",
     () => toggleHomePanel(contactPanel)
   );
@@ -843,27 +853,11 @@ async function joinOpenGame() {
   }
 }
 
-function showExistingRoomForm() {
-  existingRoomForm.classList.toggle(
-    "hidden"
-  );
-
-  contactPanel.classList.add(
-    "hidden"
-  );
-
-  clearExistingRoomMessage();
-
-  if (!existingRoomForm.classList.contains("hidden")) {
-    existingRoomInput.focus();
-  }
-}
-
 function toggleHomePanel(panel) {
   const shouldShow =
     panel.classList.contains("hidden");
 
-  existingRoomForm.classList.add(
+  friendPanel.classList.add(
     "hidden"
   );
 
@@ -875,6 +869,11 @@ function toggleHomePanel(panel) {
     panel.classList.remove(
       "hidden"
     );
+
+    if (panel === friendPanel) {
+      clearExistingRoomMessage();
+      existingRoomInput.focus();
+    }
   }
 }
 

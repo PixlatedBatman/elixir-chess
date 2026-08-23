@@ -280,6 +280,41 @@ body {
   color: #f0d9b5;
 }
 
+.friend-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.friend-create-btn {
+  width: 100%;
+}
+
+.friend-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #888;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.friend-divider::before,
+.friend-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #383838;
+}
+
+.friend-divider span {
+  padding: 0 10px;
+}
+
+.friend-room-form {
+  display: grid;
+  gap: 8px;
+}
+
 button {
   min-height: 42px;
 
