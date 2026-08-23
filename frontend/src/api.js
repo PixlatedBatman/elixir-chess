@@ -275,10 +275,14 @@ export async function submitDraw(
   );
 }
 
-export async function submitRematch() {
+export async function submitRematch(
+  response = null
+) {
   return postRoomAction(
     "rematch",
-    {}
+    response
+      ? { response }
+      : {}
   );
 }
 

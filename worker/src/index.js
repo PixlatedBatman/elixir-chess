@@ -959,6 +959,23 @@ export class GameRoom {
     const opponentRole = oppositeColor(role);
     const opponentPresent = Boolean(state.players[opponentRole]);
 
+    if (body.response === "decline") {
+      if (state.rematchOffer === opponentRole) {
+        state.rematchOffer = null;
+        await this.saveState(state);
+        this.broadcast(state);
+      }
+
+      return json(
+        serializeState(
+          state,
+          role
+        ),
+        200,
+        request
+      );
+    }
+
     if (!opponentPresent || state.rematchOffer === opponentRole) {
       const oldW = state.players.w;
       const oldB = state.players.b;

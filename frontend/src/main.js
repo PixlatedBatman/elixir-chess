@@ -418,6 +418,29 @@ document.querySelector("#app").innerHTML = `
         </div>
       </div>
 
+      <div id="rematch-offer"
+          class="modal-backdrop hidden">
+        <div class="draw-offer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rematch-offer-text">
+          <span id="rematch-offer-text">Opponent offered a rematch!</span>
+
+          <div class="modal-actions">
+            <button id="accept-rematch"
+                type="button">
+              Accept Rematch
+            </button>
+
+            <button id="decline-rematch"
+                type="button"
+                class="secondary-button">
+              Decline
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div id="resign-confirm-modal"
           class="modal-backdrop hidden">
         <div class="resign-dialog"
@@ -588,6 +611,18 @@ const acceptDrawButton =
 
 const declineDrawButton =
   document.getElementById("decline-draw");
+
+const rematchOfferElement =
+  document.getElementById("rematch-offer");
+
+const rematchOfferTextElement =
+  document.getElementById("rematch-offer-text");
+
+const acceptRematchButton =
+  document.getElementById("accept-rematch");
+
+const declineRematchButton =
+  document.getElementById("decline-rematch");
 
 const resignConfirmModalElement =
   document.getElementById("resign-confirm-modal");
@@ -772,6 +807,24 @@ playAgainButton.addEventListener(
     playAgainButton.disabled = true;
     playAgainButton.textContent = "Waiting for Opponent...";
     await submitRematch();
+    renderApp();
+  }
+);
+
+acceptRematchButton.addEventListener(
+  "click",
+  async () => {
+    rematchOfferElement.classList.add("hidden");
+    await submitRematch("accept");
+    renderApp();
+  }
+);
+
+declineRematchButton.addEventListener(
+  "click",
+  async () => {
+    rematchOfferElement.classList.add("hidden");
+    await submitRematch("decline");
     renderApp();
   }
 );
@@ -1282,6 +1335,27 @@ function renderDrawControls() {
 
     drawOfferTextElement.textContent =
       `${offerLabel} offered a draw.`;
+  }
+
+  const hasIncomingRematchOffer =
+    isPlayer &&
+    gameOver &&
+    appState.rematchOffer &&
+    appState.rematchOffer !== appState.playerColor;
+
+  rematchOfferElement.classList.toggle(
+    "hidden",
+    !hasIncomingRematchOffer
+  );
+
+  if (hasIncomingRematchOffer) {
+    const offerLabel =
+      appState.rematchOffer === "w"
+        ? "White"
+        : "Black";
+
+    rematchOfferTextElement.textContent =
+      `${offerLabel} offered a rematch!`;
   }
 }
 
