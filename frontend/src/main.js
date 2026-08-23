@@ -78,7 +78,7 @@ document.querySelector("#app").innerHTML = `
           </div>
 
           <form id="existing-room-form"
-              class="friend-room-form">
+              class="room-entry friend-room-form">
             <div class="room-entry-row">
               <input id="existing-room-input"
                   name="room"
@@ -86,7 +86,7 @@ document.querySelector("#app").innerHTML = `
                   inputmode="text"
                   placeholder="Enter room number" />
 
-              <button type="submit">Join</button>
+              <button type="submit">Enter</button>
             </div>
 
             <p id="existing-room-message"
