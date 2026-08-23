@@ -1,0 +1,287 @@
+.board-shell {
+  position: relative;
+
+  width: 100%;
+  aspect-ratio: 1;
+
+  --pl-duration: 190ms;
+  --pl-ease: cubic-bezier(0.22, 0.68, 0.34, 1);
+  --pl-piece-size: 88%;
+
+  touch-action: none;
+  user-select: none;
+}
+
+/* ---------------- SQUARE LAYER ---------------- */
+
+.square-layer {
+  position: absolute;
+  inset: 0;
+
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+
+  overflow: hidden;
+}
+
+.pl-square {
+  position: relative;
+}
+
+.pl-square.light {
+  background: #f0d9b5;
+}
+
+.pl-square.dark {
+  background: #b58863;
+}
+
+.pl-coordinate {
+  position: absolute;
+  z-index: 1;
+
+  color: rgba(20, 20, 20, 0.55);
+  font-size: clamp(8px, 1.4vw, 11px);
+  font-weight: 700;
+
+  pointer-events: none;
+}
+
+.pl-coordinate-rank {
+  top: 3px;
+  left: 4px;
+}
+
+.pl-coordinate-file {
+  right: 4px;
+  bottom: 2px;
+}
+
+/* ---------------- SQUARE STATES ---------------- */
+
+.pl-square.pl-last-move::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: rgba(255, 210, 64, 0.38);
+}
+
+.pl-square.pl-selected::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: rgba(246, 246, 105, 0.45);
+}
+
+.pl-square.pl-premove::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: rgba(96, 165, 250, 0.42);
+}
+
+.pl-square.pl-check::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: radial-gradient(
+    circle at center,
+    rgba(220, 38, 38, 0.85) 0%,
+    rgba(220, 38, 38, 0.35) 55%,
+    transparent 78%
+  );
+
+  animation: pl-check-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes pl-check-pulse {
+  0%, 100% {
+    opacity: 0.75;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.pl-square.pl-legal::after {
+  content: "";
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  width: 26%;
+  height: 26%;
+
+  border-radius: 50%;
+  background: rgba(20, 20, 20, 0.26);
+
+  transform: translate(-50%, -50%) scale(0.4);
+  animation: pl-dot-in 140ms var(--pl-ease) forwards;
+}
+
+.pl-square.pl-capture::after {
+  content: "";
+  position: absolute;
+  inset: 6%;
+
+  border-radius: 8px;
+  border: 4px solid rgba(220, 60, 60, 0.55);
+
+  transform: scale(0.85);
+  animation: pl-ring-in 140ms var(--pl-ease) forwards;
+}
+
+@keyframes pl-dot-in {
+  to {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes pl-ring-in {
+  to {
+    transform: scale(1);
+  }
+}
+
+/* ---------------- PIECE LAYER ---------------- */
+
+.piece-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+
+  /* Inert on purpose: all hit testing is done from board geometry. */
+  pointer-events: none;
+}
+
+/* Outer element: grid position only. */
+.pl-piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 12.5%;
+  height: 12.5%;
+
+  will-change: transform;
+  transition:
+    transform var(--pl-duration) var(--pl-ease),
+    opacity 170ms linear;
+}
+
+/* Inner element: everything visual. */
+.pl-piece-art {
+  width: 100%;
+  height: 100%;
+
+  background-size: var(--pl-piece-size) var(--pl-piece-size);
+  background-position: center;
+  background-repeat: no-repeat;
+
+  transition:
+    transform 180ms var(--pl-ease),
+    filter 180ms linear;
+}
+
+.pl-piece.pl-moving {
+  z-index: 20;
+}
+
+.pl-piece.pl-dragging {
+  z-index: 40;
+  transition: none;
+}
+
+.pl-piece.pl-dragging .pl-piece-art {
+  transform: scale(1.08);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+}
+
+.pl-piece.pl-captured {
+  z-index: 2;
+  opacity: 0;
+}
+
+.pl-piece.pl-captured .pl-piece-art {
+  transform: scale(0.62);
+}
+
+.pl-piece.pl-summoned .pl-piece-art {
+  animation: pl-summon 500ms var(--pl-ease);
+}
+
+.pl-piece.pl-promoted .pl-piece-art {
+  animation: pl-promote 340ms var(--pl-ease);
+}
+
+@keyframes pl-summon {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+    filter: brightness(2.4) drop-shadow(0 0 14px rgba(120, 200, 255, 0.9));
+  }
+
+  55% {
+    opacity: 1;
+    transform: scale(1.18);
+    filter: brightness(1.5) drop-shadow(0 0 12px rgba(120, 200, 255, 0.7));
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+@keyframes pl-promote {
+  0% {
+    transform: scale(1);
+    filter: none;
+  }
+
+  45% {
+    transform: scale(1.26);
+    filter: brightness(1.7) drop-shadow(0 0 12px rgba(255, 226, 130, 0.95));
+  }
+
+  100% {
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+/* ---------------- REDUCED MOTION ---------------- */
+
+.board-shell.pl-reduced-motion .pl-piece,
+.board-shell.pl-reduced-motion .pl-piece-art,
+.board-shell.pl-reduced-motion .pl-square::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+.board-shell.pl-reduced-motion .pl-square.pl-check::before {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-piece,
+  .pl-piece-art {
+    transition: none;
+  }
+
+  .pl-piece.pl-summoned .pl-piece-art,
+  .pl-piece.pl-promoted .pl-piece-art,
+  .pl-square.pl-check::before,
+  .pl-square.pl-legal::after,
+  .pl-square.pl-capture::after {
+    animation: none;
+  }
+}

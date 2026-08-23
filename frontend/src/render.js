@@ -1,5 +1,12 @@
 import { Chess } from "chess.js";
 
+import "./board/pieceLayer.css";
+import "./board/boardTheme.css";
+
+import {
+  PieceLayer,
+} from "./board/pieceLayer";
+
 const PIECE_THEME =
   "https://chessboardjs.com/img/chesspieces/wikipedia/";
 
@@ -11,6 +18,50 @@ const RESERVE_COSTS = {
   Q: 9,
 };
 
+// `?noanim` falls back to the original rebuild-every-frame board so the two
+// can be compared side by side without a rebuild.
+const ANIMATION_ENABLED =
+  !new URLSearchParams(
+    window.location.search
+  ).has("noanim");
+
+// Emit the class names the existing stylesheet already targets, so the
+// animated board is visually identical to the legacy one.
+const LEGACY_CLASS_NAMES = {
+  square: "square",
+  coordinate: "board-coordinate",
+  rank: "rank-coordinate",
+  file: "file-coordinate",
+  lastMove: "last-move",
+  selected: "selected-square",
+  legal: "legal-move",
+  capture: "legal-capture",
+  premove: "premove-square",
+  check: "king-in-check",
+};
+
+let layer = null;
+let layerContainer = null;
+let lastPaintedFen = null;
+let pendingMove = null;
+let shouldSnap = false;
+
+export function getBoardLayer() {
+  return layer;
+}
+
+// Lets the optimistic-move path hand over the details reconciliation cannot
+// infer on its own (currently just promotion). Consumed by the next paint.
+export function setPendingMove(move) {
+  pendingMove = move;
+}
+
+// Suppresses animation for the next paint. Used for history jumps, where
+// sliding every piece across the board at once would just look chaotic.
+export function requestSnap() {
+  shouldSnap = true;
+}
+
 export function createBoard(
   boardElement,
   fen,
@@ -20,6 +71,127 @@ export function createBoard(
   orientation = "w",
   lastMove = null,
   premove = null
+) {
+
+  if (!ANIMATION_ENABLED) {
+    createBoardLegacy(
+      boardElement,
+      fen,
+      draggedFrom,
+      selectedSquare,
+      legalMoves,
+      orientation,
+      lastMove,
+      premove
+    );
+
+    return;
+  }
+
+  if (layerContainer !== boardElement) {
+    boardElement.innerHTML = "";
+
+    layer =
+      new PieceLayer(boardElement, {
+        orientation,
+        pieceTheme: PIECE_THEME,
+        classNames: LEGACY_CLASS_NAMES,
+      });
+
+    layerContainer = boardElement;
+    lastPaintedFen = null;
+  }
+
+  layer.setOrientation(orientation);
+
+  const tempGame =
+    new Chess(fen);
+
+  const board =
+    tempGame.board();
+
+  const checkedKingSquare =
+    tempGame.inCheck()
+      ? getKingSquare(
+          board,
+          tempGame.turn()
+        )
+      : null;
+
+  const legal = [];
+  const captures = [];
+
+  for (const target of legalMoves || []) {
+    if (isOccupied(board, target)) {
+      captures.push(target);
+    } else {
+      legal.push(target);
+    }
+  }
+
+  // Only reconcile when the position actually changed. Selection and
+  // highlight-only rerenders stay class toggles, and a piece being dragged
+  // never gets yanked back under the cursor.
+  if (fen !== lastPaintedFen) {
+    layer.setPosition(fen, {
+      move: pendingMove,
+      animate: !shouldSnap,
+    });
+
+    lastPaintedFen = fen;
+  }
+
+  pendingMove = null;
+  shouldSnap = false;
+
+  layer.setHighlights({
+    lastMove: lastMove?.squares || [],
+    selected: selectedSquare,
+    legal,
+    captures,
+    premove: getPremoveSquares(premove),
+    check: checkedKingSquare,
+  });
+}
+
+function getPremoveSquares(premove) {
+  if (!premove) {
+    return [];
+  }
+
+  if (premove.type === "reserve") {
+    return [premove.target];
+  }
+
+  return [
+    premove.from,
+    premove.to,
+  ].filter(Boolean);
+}
+
+function isOccupied(board, square) {
+  const file =
+    square.charCodeAt(0) - 97;
+
+  const rank =
+    8 - Number(square[1]);
+
+  return Boolean(
+    board[rank]?.[file]
+  );
+}
+
+// ---------------- LEGACY BOARD ----------------
+
+function createBoardLegacy(
+  boardElement,
+  fen,
+  draggedFrom,
+  selectedSquare,
+  legalMoves,
+  orientation,
+  lastMove,
+  premove
 ) {
 
   boardElement.innerHTML = "";

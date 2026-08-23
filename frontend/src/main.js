@@ -24,6 +24,7 @@ import {
 import {
   createBoard,
   renderReserve,
+  requestSnap,
 } from "./render";
 
 import {
@@ -904,13 +905,9 @@ moveHistoryElement.addEventListener(
   (event) => {
     const moveBtn = event.target.closest("[data-history-index]");
     if (moveBtn) {
-      const index = Number(moveBtn.dataset.historyIndex);
-      if (index === (appState.moveHistory?.length ?? 0) - 1) {
-        appState.selectedHistoryIndex = null;
-      } else {
-        appState.selectedHistoryIndex = index;
-      }
-      renderApp();
+      goToHistoryIndex(
+        Number(moveBtn.dataset.historyIndex)
+      );
     }
   }
 );
@@ -1554,13 +1551,29 @@ function goToHistoryIndex(index) {
     return;
   }
 
+  const previousIndex = resolveHistoryIndex();
+
   if (index === null || index >= moves.length - 1) {
     appState.selectedHistoryIndex = null;
   } else {
     appState.selectedHistoryIndex = Math.max(-1, index);
   }
 
+  // Stepping one ply animates. Jumping further would slide every piece at
+  // once, so snap instead.
+  if (Math.abs(resolveHistoryIndex() - previousIndex) > 1) {
+    requestSnap();
+  }
+
   renderApp();
+}
+
+function resolveHistoryIndex() {
+  const moves = appState.moveHistory || [];
+
+  return appState.selectedHistoryIndex === null
+    ? moves.length - 1
+    : appState.selectedHistoryIndex;
 }
 
 function renderGameOver() {

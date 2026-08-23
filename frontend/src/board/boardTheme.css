@@ -1,0 +1,40 @@
+/*
+ * Adapts the piece layer to the game's existing #board element.
+ *
+ * The layer emits the legacy class names (`square`, `last-move`,
+ * `legal-move`, `king-in-check`, ...), so every highlight rule in style.css
+ * keeps applying untouched and the animated board is visually identical to
+ * the old one. Only the pieces move differently.
+ */
+
+.board.board-shell {
+  /* The grid in style.css had 64 in-flow children; now the two stacked
+     layers are absolute, so the grid declaration is inert either way. */
+  display: block;
+}
+
+/* style.css already draws the outer border, so the square layer must not
+   round its own corners inside it. */
+.board.board-shell .square-layer {
+  border-radius: 0;
+}
+
+/* Match the legacy `.piece { width: 80%; height: 80% }` sizing. */
+.board.board-shell {
+  --pl-piece-size: 80%;
+}
+
+/* The legacy board brightened the whole square (piece included) on hover.
+   Pieces now live in a sibling layer, so brighten them in step. */
+.board.board-shell:hover .pl-piece-art {
+  transition:
+    transform 180ms var(--pl-ease),
+    filter 180ms linear;
+}
+
+/* Reserve tray pieces are still real <img> elements dragged with a clone,
+   so they keep the original `.piece` cursor affordance. Board pieces are
+   inert, so the grab cursor belongs on the square underneath. */
+.board.board-shell .square {
+  cursor: default;
+}
