@@ -580,6 +580,10 @@ async function commitMove(from, to) {
 
   appState.clockTurn = getTurn();
 
+  const myRoleLabel = role === "w" ? "White" : "Black";
+  const nextTurnLabel = appState.clockTurn === "w" ? "White" : "Black";
+  appState.statusMessage = `${myRoleLabel} player. ${nextTurnLabel} to move.`;
+
   playMoveSound(isCapture);
 
   appState.lastSoundKey =
@@ -705,6 +709,10 @@ async function commitReserve(
   }
 
   appState.clockTurn = getTurn();
+
+  const myRoleLabel = role === "w" ? "White" : "Black";
+  const nextTurnLabel = appState.clockTurn === "w" ? "White" : "Black";
+  appState.statusMessage = `${myRoleLabel} player. ${nextTurnLabel} to move.`;
 
   playMoveSound(false);
 
