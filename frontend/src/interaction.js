@@ -499,8 +499,14 @@ async function commitMove(from, to) {
     score: appState.score
       ? { ...appState.score }
       : null,
+    moveHistory: appState.moveHistory
+      ? [...appState.moveHistory]
+      : [],
     clockTurn: appState.clockTurn,
   };
+
+  const turnNumber =
+    Number(appState.fen.split(" ")[5]) || 1;
 
   appState.fen = getFen();
   appState.lastMove = {
@@ -510,6 +516,18 @@ async function commitMove(from, to) {
       to,
     ],
   };
+
+  appState.moveHistory = [
+    ...(appState.moveHistory || []),
+    {
+      color: role,
+      turnNumber,
+      notation: move.san,
+      type: "move",
+      from: move.from,
+      to: move.to,
+    },
+  ];
 
   if (appState.elixir && role) {
     appState.elixir = {
@@ -604,8 +622,14 @@ async function commitReserve(
     score: appState.score
       ? { ...appState.score }
       : null,
+    moveHistory: appState.moveHistory
+      ? [...appState.moveHistory]
+      : [],
     clockTurn: appState.clockTurn,
   };
+
+  const turnNumber =
+    Number(appState.fen.split(" ")[5]) || 1;
 
   const placed =
     placeReserve(
@@ -624,6 +648,17 @@ async function commitReserve(
       target,
     ],
   };
+
+  appState.moveHistory = [
+    ...(appState.moveHistory || []),
+    {
+      color: role,
+      turnNumber,
+      notation: `${pieceCode?.[1] || "P"}@${target}`,
+      type: "reserve",
+      to: target,
+    },
+  ];
 
   if (appState.elixir) {
     appState.elixir = {
@@ -678,6 +713,7 @@ function rollbackState(snapshot) {
   appState.lastMove = snapshot.lastMove;
   appState.elixir = snapshot.elixir;
   appState.score = snapshot.score;
+  appState.moveHistory = snapshot.moveHistory;
   appState.clockTurn = snapshot.clockTurn;
   appState.statusMessage =
     "Move rejected by server";
