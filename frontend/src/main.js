@@ -232,6 +232,22 @@ document.querySelector("#app").innerHTML = `
 
       <div class="changelog-entry">
         <div class="changelog-entry-header">
+          <h2>Update v2.0</h2>
+          <span class="changelog-date">August 24, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Animated Piece Movement:</strong> Pieces now glide between squares instead of snapping. The board was rebuilt as a static square grid with a separate persistent piece layer, so a move animates the actual piece rather than redrawing the board. Castling slides the king and rook together, captures fade out, en passant clears the correct pawn, and promotions swap on arrival.</li>
+          <li><strong>Reserve Summon Animation:</strong> Placing a reserve piece now materialises it with a glow instead of popping it in, visible to both players.</li>
+          <li><strong>Animated Elixir Bar:</strong> Replaced the Elixir text readout with a segmented bar that fills as Elixir is earned, drains on a purchase, and flashes on gain. Capture score moved to its own chip.</li>
+          <li><strong>Ambient Background:</strong> Slowly drifting piece silhouettes behind the menu screens, hidden during play so they never compete with the board.</li>
+          <li><strong>Smoother Dragging:</strong> Dragging moves the real piece rather than a floating copy, and an illegal drop glides it home instead of snapping back.</li>
+          <li><strong>Reduced Motion Support:</strong> All new animation respects the system "reduce motion" setting.</li>
+          <li><strong>Fixes:</strong> Removed a stray scrollbar on the home screen, fixed oversized stacked home buttons on mobile, stopped a drag from silently cancelling a queued premove, and restored the grab cursor over pieces.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
           <h2>Update v1.9</h2>
           <span class="changelog-date">August 24, 2026</span>
         </div>
