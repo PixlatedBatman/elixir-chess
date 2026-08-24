@@ -146,12 +146,17 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 48px);
+
+  /* Fill whatever `.page` has left rather than doing viewport maths here.
+     Hardcoding `100vh - <padding>` has to be kept in sync with `.page`'s
+     padding, which differs between desktop and the mobile breakpoint, so any
+     single value is wrong on one of them and the page overflows. */
+  flex-grow: 1;
+
   width: 100%;
   position: relative;
   box-sizing: border-box;
   padding: 0 0 68px;
-  margin: auto 0;
 }
 
 .home-screen-footer {
@@ -1214,6 +1219,14 @@ button:disabled {
   .modal-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  /* `.home-actions button` sets `flex: 1 1 150px` as a minimum *width* for the
+     wrapped row layout. Once the container flips to a column that basis
+     becomes a minimum *height*, turning each button into a 150px slab and
+     pushing the page past the viewport. */
+  .home-actions button {
+    flex: 0 0 auto;
   }
 }
 
