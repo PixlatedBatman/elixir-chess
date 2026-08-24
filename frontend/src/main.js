@@ -233,7 +233,7 @@ document.querySelector("#app").innerHTML = `
       <div class="changelog-entry">
         <div class="changelog-entry-header">
           <h2>Update v2.0</h2>
-          <span class="changelog-date">August 24, 2026</span>
+          <span class="changelog-date">August 25, 2026</span>
         </div>
         <ul class="changelog-list">
           <li><strong>Animated Piece Movement:</strong> Pieces now glide between squares instead of snapping. The board was rebuilt as a static square grid with a separate persistent piece layer, so a move animates the actual piece rather than redrawing the board. Castling slides the king and rook together, captures fade out, en passant clears the correct pawn, and promotions swap on arrival.</li>
