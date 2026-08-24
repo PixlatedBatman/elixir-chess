@@ -146,9 +146,13 @@ The display ceiling is `ELIXIR_BAR_MAX` in `frontend/src/main.js`. Change it if 
 
 The menu screens have a layer of slowly drifting piece silhouettes behind them. They are font glyphs rather than images, so nothing is downloaded and they scale cleanly at any size. Each one gets a randomised size, speed, drift and a negative animation delay, so the field is already in motion on the first frame instead of starting empty.
 
+A piece keeps its column for the whole session, drifting only about 100px sideways, so placement is **stratified rather than uniformly random**: the width is split into one band per piece and each piece is jittered inside its own band. Purely random placement reliably leaves whole columns of the screen permanently empty. Bands are shuffled so a piece's column does not track its glyph type, and starting heights are spread the same way so pieces trickle upward instead of arriving in clumps.
+
+The number of pieces scales with viewport width (`AMBIENT_SPACING`, clamped between `AMBIENT_MIN_COUNT` and `AMBIENT_MAX_COUNT`), because the bands stretch with the viewport and a fixed count leaves wide screens sparse. The count is decided at load; bands are in `vw`, so coverage stays even if the window is later resized.
+
 The layer is `pointer-events: none` and never intercepts input. It is hidden entirely while a game is in progress, so it cannot compete with the real pieces on the board.
 
-Tune the field with `AMBIENT_GLYPHS` and `AMBIENT_COUNT` in `frontend/src/main.js`, and the motion itself with the `ambient-rise` keyframes in `frontend/src/style.css`.
+Tune the field with `AMBIENT_GLYPHS` and the spacing constants in `frontend/src/main.js`, and the motion itself with the `ambient-rise` keyframes in `frontend/src/style.css`.
 
 Under `prefers-reduced-motion` the glyphs are not created at all, and the layer is also hidden in CSS as a fallback.
 

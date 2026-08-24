@@ -63,7 +63,17 @@ const AMBIENT_GLYPHS = [
   "♟",
 ];
 
-const AMBIENT_COUNT = 18;
+// One piece per this many pixels of viewport width. A fixed count leaves wide
+// screens visibly sparse, since the bands stretch with the viewport.
+const AMBIENT_SPACING = 58;
+const AMBIENT_MIN_COUNT = 18;
+const AMBIENT_MAX_COUNT = 34;
+
+// `left` positions a glyph's left edge, so the usable span is not symmetric:
+// starting slightly left of zero pushes a piece *into* view, while starting
+// near 100vw pushes it out of view entirely. Hence the early right-hand stop.
+const AMBIENT_SPAN_START = -5;
+const AMBIENT_SPAN_WIDTH = 102;
 
 document.querySelector("#app").innerHTML = `
   <div class="page">
@@ -1070,10 +1080,34 @@ function buildAmbient() {
     return;
   }
 
+  const random =
+    (min, max) => min + Math.random() * (max - min);
+
+  // A piece's column is fixed for the whole session -- it only drifts by a
+  // little over 100px horizontally -- so uniform random placement is not good
+  // enough. With this few pieces it reliably leaves whole columns of the
+  // screen permanently empty. Instead give each piece its own vertical band
+  // and jitter it inside that band: still irregular, but guaranteed to cover
+  // the full width. Bands are shuffled so column does not track glyph type.
+  const count =
+    Math.min(
+      AMBIENT_MAX_COUNT,
+      Math.max(
+        AMBIENT_MIN_COUNT,
+        Math.round(window.innerWidth / AMBIENT_SPACING)
+      )
+    );
+
+  const bands =
+    shuffle([...Array(count).keys()]);
+
+  const bandWidth =
+    AMBIENT_SPAN_WIDTH / count;
+
   const fragment =
     document.createDocumentFragment();
 
-  for (let index = 0; index < AMBIENT_COUNT; index++) {
+  for (let index = 0; index < count; index++) {
     const piece =
       document.createElement("span");
 
@@ -1082,13 +1116,24 @@ function buildAmbient() {
     piece.textContent =
       AMBIENT_GLYPHS[index % AMBIENT_GLYPHS.length];
 
-    const random =
-      (min, max) => min + Math.random() * (max - min);
+    const left =
+      AMBIENT_SPAN_START +
+      bands[index] * bandWidth +
+      random(0, bandWidth);
 
-    piece.style.setProperty("--ambient-left", `${random(-4, 100)}vw`);
+    const duration =
+      random(38, 74);
+
+    // Spread the starting heights the same way, so pieces trickle up the
+    // screen instead of arriving in clumps. Keyed on `index` while the column
+    // comes from the shuffled band, which keeps height and column independent.
+    const phase =
+      (index + random(0, 1)) / count;
+
+    piece.style.setProperty("--ambient-left", `${left}vw`);
     piece.style.setProperty("--ambient-size", `${random(26, 92)}px`);
-    piece.style.setProperty("--ambient-duration", `${random(38, 74)}s`);
-    piece.style.setProperty("--ambient-delay", `${-random(0, 74)}s`);
+    piece.style.setProperty("--ambient-duration", `${duration}s`);
+    piece.style.setProperty("--ambient-delay", `${-phase * duration}s`);
     piece.style.setProperty("--ambient-drift", `${random(-110, 110)}px`);
     piece.style.setProperty("--ambient-spin", `${random(-50, 50)}deg`);
     piece.style.setProperty("--ambient-peak", `${random(0.05, 0.12)}`);
@@ -1097,6 +1142,17 @@ function buildAmbient() {
   }
 
   ambientElement.append(fragment);
+}
+
+function shuffle(items) {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j =
+      Math.floor(Math.random() * (i + 1));
+
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+
+  return items;
 }
 
 function goHome() {
