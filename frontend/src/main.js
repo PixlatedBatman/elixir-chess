@@ -37,8 +37,40 @@ import {
   playLowTimeSound,
 } from "./sound";
 
+// Declared up here rather than beside their functions: both are read during
+// module evaluation, and `const` is not hoisted.
+
+// The backend does not cap Elixir, so the bar needs a display ceiling. A
+// Queen at 9 is the most expensive purchase, making 10 the point past which
+// more Elixir buys nothing new -- anything beyond it reads as "surplus".
+const ELIXIR_BAR_MAX = 10;
+
+const lastElixir = {
+  w: null,
+  b: null,
+};
+
+// Drifting piece silhouettes behind the menu screens. Font glyphs rather than
+// images, so there is nothing to download and they scale cleanly. Each one
+// gets its own size, speed, drift and a negative delay so the field is already
+// in motion on the first frame instead of starting empty.
+const AMBIENT_GLYPHS = [
+  "♚",
+  "♛",
+  "♜",
+  "♝",
+  "♞",
+  "♟",
+];
+
+const AMBIENT_COUNT = 18;
+
 document.querySelector("#app").innerHTML = `
   <div class="page">
+
+    <div id="ambient"
+        class="ambient-layer"
+        aria-hidden="true"></div>
 
     <div id="home-view"
         class="home-wrapper">
@@ -364,9 +396,23 @@ document.querySelector("#app").innerHTML = `
         <div id="white-player-hud"
             class="player-hud">
           <div class="player-details">
-            <span class="player-label">White</span>
-            <span id="white-elixir"
-                class="player-stats"></span>
+            <div class="player-top">
+              <span class="player-label">White</span>
+              <span id="white-score"
+                  class="player-score"></span>
+            </div>
+
+            <div class="elixir-row">
+              <div id="white-elixir"
+                  class="elixir-bar"
+                  role="img">
+                <div id="white-elixir-fill"
+                    class="elixir-fill"></div>
+              </div>
+
+              <span id="white-elixir-value"
+                  class="elixir-value"></span>
+            </div>
           </div>
 
           <div id="white-clock"
@@ -376,9 +422,23 @@ document.querySelector("#app").innerHTML = `
         <div id="black-player-hud"
             class="player-hud">
           <div class="player-details">
-            <span class="player-label">Black</span>
-            <span id="black-elixir"
-                class="player-stats"></span>
+            <div class="player-top">
+              <span class="player-label">Black</span>
+              <span id="black-score"
+                  class="player-score"></span>
+            </div>
+
+            <div class="elixir-row">
+              <div id="black-elixir"
+                  class="elixir-bar"
+                  role="img">
+                <div id="black-elixir-fill"
+                    class="elixir-fill"></div>
+              </div>
+
+              <span id="black-elixir-value"
+                  class="elixir-value"></span>
+            </div>
           </div>
 
           <div id="black-clock"
@@ -592,6 +652,27 @@ const whiteElixirElement =
 const blackElixirElement =
   document.getElementById("black-elixir");
 
+const whiteElixirFillElement =
+  document.getElementById("white-elixir-fill");
+
+const blackElixirFillElement =
+  document.getElementById("black-elixir-fill");
+
+const whiteElixirValueElement =
+  document.getElementById("white-elixir-value");
+
+const blackElixirValueElement =
+  document.getElementById("black-elixir-value");
+
+const whiteScoreElement =
+  document.getElementById("white-score");
+
+const blackScoreElement =
+  document.getElementById("black-score");
+
+const ambientElement =
+  document.getElementById("ambient");
+
 const whiteClockElement =
   document.getElementById("white-clock");
 
@@ -710,6 +791,8 @@ setOnRerenderCallback(
 );
 
 initializeSound();
+
+buildAmbient();
 
 document
   .getElementById("play-online-button")
@@ -973,6 +1056,49 @@ if (appState.roomId) {
   connectRoom();
 }
 
+function buildAmbient() {
+  if (!ambientElement) {
+    return;
+  }
+
+  const prefersReducedMotion =
+    window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+  if (prefersReducedMotion) {
+    return;
+  }
+
+  const fragment =
+    document.createDocumentFragment();
+
+  for (let index = 0; index < AMBIENT_COUNT; index++) {
+    const piece =
+      document.createElement("span");
+
+    piece.className = "ambient-piece";
+
+    piece.textContent =
+      AMBIENT_GLYPHS[index % AMBIENT_GLYPHS.length];
+
+    const random =
+      (min, max) => min + Math.random() * (max - min);
+
+    piece.style.setProperty("--ambient-left", `${random(-4, 100)}vw`);
+    piece.style.setProperty("--ambient-size", `${random(26, 92)}px`);
+    piece.style.setProperty("--ambient-duration", `${random(38, 74)}s`);
+    piece.style.setProperty("--ambient-delay", `${-random(0, 74)}s`);
+    piece.style.setProperty("--ambient-drift", `${random(-110, 110)}px`);
+    piece.style.setProperty("--ambient-spin", `${random(-50, 50)}deg`);
+    piece.style.setProperty("--ambient-peak", `${random(0.05, 0.12)}`);
+
+    fragment.append(piece);
+  }
+
+  ambientElement.append(fragment);
+}
+
 function goHome() {
   window.location.href =
     window.location.pathname;
@@ -1165,9 +1291,19 @@ function renderApp() {
     showingRules || showingChangelog || !hasRoom || gameReady
   );
 
+  const showingGame =
+    !(showingRules || showingChangelog || !hasRoom || !gameReady);
+
   gameView.classList.toggle(
     "hidden",
-    showingRules || showingChangelog || !hasRoom || !gameReady
+    !showingGame
+  );
+
+  // The board needs full attention, and drifting silhouettes behind it would
+  // compete with the real pieces.
+  ambientElement?.classList.toggle(
+    "hidden",
+    showingGame
   );
 
   if (showingRules || showingChangelog || !hasRoom) {
@@ -1265,11 +1401,21 @@ function renderGame() {
 }
 
 function renderElixir() {
-  whiteElixirElement.textContent =
-    `Elixir: ${appState.elixir?.w ?? 0} | Score: ${appState.score?.w ?? 0}`;
+  renderElixirSide(
+    "w",
+    whiteElixirElement,
+    whiteElixirFillElement,
+    whiteElixirValueElement,
+    whiteScoreElement
+  );
 
-  blackElixirElement.textContent =
-    `Elixir: ${appState.elixir?.b ?? 0} | Score: ${appState.score?.b ?? 0}`;
+  renderElixirSide(
+    "b",
+    blackElixirElement,
+    blackElixirFillElement,
+    blackElixirValueElement,
+    blackScoreElement
+  );
 
   whitePlayerHudElement.classList.toggle(
     "mine",
@@ -1279,6 +1425,69 @@ function renderElixir() {
   blackPlayerHudElement.classList.toggle(
     "mine",
     appState.playerColor === "b"
+  );
+}
+
+function renderElixirSide(
+  role,
+  barElement,
+  fillElement,
+  valueElement,
+  scoreElement
+) {
+  const elixir =
+    appState.elixir?.[role] ?? 0;
+
+  const score =
+    appState.score?.[role] ?? 0;
+
+  const filled =
+    Math.min(elixir, ELIXIR_BAR_MAX);
+
+  fillElement.style.width =
+    `${(filled / ELIXIR_BAR_MAX) * 100}%`;
+
+  valueElement.textContent =
+    String(elixir);
+
+  scoreElement.textContent =
+    score > 0
+      ? `+${score}`
+      : "";
+
+  barElement.setAttribute(
+    "aria-label",
+    `${role === "w" ? "White" : "Black"} Elixir ${elixir}`
+  );
+
+  barElement.classList.toggle(
+    "surplus",
+    elixir > ELIXIR_BAR_MAX
+  );
+
+  // Flash only on a gain, so the bar reacts to earning Elixir rather than to
+  // every unrelated rerender.
+  const previous =
+    lastElixir[role];
+
+  if (previous !== null && elixir > previous) {
+    pulseElixir(barElement);
+  }
+
+  lastElixir[role] = elixir;
+}
+
+function pulseElixir(barElement) {
+  barElement.classList.remove("gained");
+
+  // Force a reflow so the animation restarts on consecutive gains.
+  void barElement.offsetWidth;
+
+  barElement.classList.add("gained");
+
+  window.setTimeout(
+    () => barElement.classList.remove("gained"),
+    600
   );
 }
 

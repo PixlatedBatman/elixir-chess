@@ -19,6 +19,8 @@ On your turn, choose one action:
 - Reserve placements do not give +1 Elixir.
 - Both players can see both Elixir balances.
 - The backend owns Elixir balances and validates reserve purchases.
+- Each player's balance is shown as a segmented bar in their HUD, which fills as Elixir is earned and drains when a reserve piece is bought.
+- Elixir is not capped. The bar is scaled to 10, one past the most expensive purchase, and anything beyond that fills the bar completely and switches to a brighter "surplus" style while the number keeps counting.
 
 Reserve costs:
 
@@ -133,6 +135,22 @@ To change it:
 Reserve placements play a summon animation rather than a slide, for both the placing player and the opponent. Captures fade out, promotions swap the sprite on arrival, and castling slides the king and rook together.
 
 Stepping one move through the history animates. Larger jumps (`Home`, `End`, clicking a distant move) snap instead, since sliding every piece at once is unreadable.
+
+### Elixir bar
+
+The HUD Elixir bar animates its width when a balance changes, and flashes only when Elixir is *gained*, so it reacts to earning rather than to unrelated rerenders. Segment dividers make it countable at a glance, and the numeric value sits outside the track so it stays readable whatever the fill level.
+
+The display ceiling is `ELIXIR_BAR_MAX` in `frontend/src/main.js`. Change it if reserve costs change.
+
+### Ambient background
+
+The menu screens have a layer of slowly drifting piece silhouettes behind them. They are font glyphs rather than images, so nothing is downloaded and they scale cleanly at any size. Each one gets a randomised size, speed, drift and a negative animation delay, so the field is already in motion on the first frame instead of starting empty.
+
+The layer is `pointer-events: none` and never intercepts input. It is hidden entirely while a game is in progress, so it cannot compete with the real pieces on the board.
+
+Tune the field with `AMBIENT_GLYPHS` and `AMBIENT_COUNT` in `frontend/src/main.js`, and the motion itself with the `ambient-rise` keyframes in `frontend/src/style.css`.
+
+Under `prefers-reduced-motion` the glyphs are not created at all, and the layer is also hidden in CSS as a fallback.
 
 ### Prototype page
 
