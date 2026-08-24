@@ -63,11 +63,6 @@ export function setOnRerenderCallback(
 
 // ---------------- DRAG STATE ----------------
 
-// let draggedPiece = null;
-// let draggedFrom = null;
-
-// let floatingPiece = null;
-
 let activePointerId = null;
 
 // Set while a board piece is being dragged directly (animated board). Reserve
