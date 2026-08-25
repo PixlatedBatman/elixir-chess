@@ -117,7 +117,7 @@ export class PieceLayer {
     this.container = container;
     this.orientation = options.orientation || "w";
     this.pieceTheme = options.pieceTheme || DEFAULT_PIECE_THEME;
-    this.animationMs = options.animationMs ?? 190;
+    this.animationMs = options.animationMs ?? 300;
 
     this.classes = {
       ...DEFAULT_CLASS_NAMES,

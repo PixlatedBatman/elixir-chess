@@ -4,7 +4,7 @@
   width: 100%;
   aspect-ratio: 1;
 
-  --pl-duration: 190ms;
+  --pl-duration: 300ms;
   --pl-ease: cubic-bezier(0.22, 0.68, 0.34, 1);
   --pl-piece-size: 88%;
 

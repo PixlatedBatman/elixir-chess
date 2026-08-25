@@ -128,7 +128,7 @@ To change it:
 
 ### Motion settings
 
-- **Duration** defaults to 190ms, set by `--pl-duration` on the board element. Override it in CSS, pass `animationMs` when constructing the layer, or call `setAnimationDuration()` at runtime.
+- **Duration** defaults to 300ms, set by `--pl-duration` on the board element. Override it in CSS, pass `animationMs` when constructing the layer, or call `setAnimationDuration()` at runtime.
 - **Piece size** is `--pl-piece-size` (80% in game, matching the original piece sizing).
 - **Reduced motion** is respected automatically via `prefers-reduced-motion`. Adding the `pl-reduced-motion` class to the board forces it on. Moves still apply instantly; only the animation is skipped.
 
