@@ -1,12 +1,33 @@
+html {
+  height: 100%;
+  height: 100dvh;
+}
+
 body {
   margin: 0;
+  padding: 0;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: #1e1e1e;
   color: white;
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+#app {
+  width: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 .page {
+  width: 100%;
+  min-height: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   box-sizing: border-box;
   padding: 40px 12px 24px;
 
@@ -1234,6 +1255,25 @@ button:disabled {
   .page {
     padding: 6px 8px;
     gap: 8px;
+    min-height: 100%;
+    min-height: 100dvh;
+  }
+
+  .home-wrapper {
+    padding: 0 0 50px;
+  }
+
+  .home-screen-footer {
+    bottom: 12px;
+  }
+
+  .screen-panel.home-panel {
+    padding: 22px 18px;
+    gap: 14px;
+  }
+
+  .home-panel h1 {
+    font-size: 28px;
   }
 
   .game-view {
