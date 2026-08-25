@@ -24,6 +24,7 @@ import {
 import {
   createBoard,
   renderReserve,
+  requestSnap,
 } from "./render";
 
 import {
@@ -36,8 +37,50 @@ import {
   playLowTimeSound,
 } from "./sound";
 
+// Declared up here rather than beside their functions: both are read during
+// module evaluation, and `const` is not hoisted.
+
+// The backend does not cap Elixir, so the bar needs a display ceiling. A
+// Queen at 9 is the most expensive purchase, making 10 the point past which
+// more Elixir buys nothing new -- anything beyond it reads as "surplus".
+const ELIXIR_BAR_MAX = 10;
+
+const lastElixir = {
+  w: null,
+  b: null,
+};
+
+// Drifting piece silhouettes behind the menu screens. Font glyphs rather than
+// images, so there is nothing to download and they scale cleanly. Each one
+// gets its own size, speed, drift and a negative delay so the field is already
+// in motion on the first frame instead of starting empty.
+const AMBIENT_GLYPHS = [
+  "♚",
+  "♛",
+  "♜",
+  "♝",
+  "♞",
+  "♟",
+];
+
+// One piece per this many pixels of viewport width. A fixed count leaves wide
+// screens visibly sparse, since the bands stretch with the viewport.
+const AMBIENT_SPACING = 58;
+const AMBIENT_MIN_COUNT = 18;
+const AMBIENT_MAX_COUNT = 34;
+
+// `left` positions a glyph's left edge, so the usable span is not symmetric:
+// starting slightly left of zero pushes a piece *into* view, while starting
+// near 100vw pushes it out of view entirely. Hence the early right-hand stop.
+const AMBIENT_SPAN_START = -5;
+const AMBIENT_SPAN_WIDTH = 102;
+
 document.querySelector("#app").innerHTML = `
   <div class="page">
+
+    <div id="ambient"
+        class="ambient-layer"
+        aria-hidden="true"></div>
 
     <div id="home-view"
         class="home-wrapper">
@@ -185,6 +228,22 @@ document.querySelector("#app").innerHTML = `
             class="secondary-button compact-button">
           Home
         </button>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="changelog-entry-header">
+          <h2>Update v2.0</h2>
+          <span class="changelog-date">August 25, 2026</span>
+        </div>
+        <ul class="changelog-list">
+          <li><strong>Animated Piece Movement:</strong> Pieces now glide between squares instead of snapping. The board was rebuilt as a static square grid with a separate persistent piece layer, so a move animates the actual piece rather than redrawing the board. Castling slides the king and rook together, captures fade out, en passant clears the correct pawn, and promotions swap on arrival.</li>
+          <li><strong>Reserve Summon Animation:</strong> Placing a reserve piece now materialises it with a glow instead of popping it in, visible to both players.</li>
+          <li><strong>Animated Elixir Bar:</strong> Replaced the Elixir text readout with a segmented bar that fills as Elixir is earned, drains on a purchase, and flashes on gain. Capture score moved to its own chip.</li>
+          <li><strong>Ambient Background:</strong> Slowly drifting piece silhouettes behind the menu screens, hidden during play so they never compete with the board.</li>
+          <li><strong>Smoother Dragging:</strong> Dragging moves the real piece rather than a floating copy, and an illegal drop glides it home instead of snapping back.</li>
+          <li><strong>Reduced Motion Support:</strong> All new animation respects the system "reduce motion" setting.</li>
+          <li><strong>Fixes:</strong> Removed a stray scrollbar on the home screen, fixed oversized stacked home buttons on mobile, stopped a drag from silently cancelling a queued premove, and restored the grab cursor over pieces.</li>
+        </ul>
       </div>
 
       <div class="changelog-entry">
@@ -363,9 +422,23 @@ document.querySelector("#app").innerHTML = `
         <div id="white-player-hud"
             class="player-hud">
           <div class="player-details">
-            <span class="player-label">White</span>
-            <span id="white-elixir"
-                class="player-stats"></span>
+            <div class="player-top">
+              <span class="player-label">White</span>
+              <span id="white-score"
+                  class="player-score"></span>
+            </div>
+
+            <div class="elixir-row">
+              <div id="white-elixir"
+                  class="elixir-bar"
+                  role="img">
+                <div id="white-elixir-fill"
+                    class="elixir-fill"></div>
+              </div>
+
+              <span id="white-elixir-value"
+                  class="elixir-value"></span>
+            </div>
           </div>
 
           <div id="white-clock"
@@ -375,9 +448,23 @@ document.querySelector("#app").innerHTML = `
         <div id="black-player-hud"
             class="player-hud">
           <div class="player-details">
-            <span class="player-label">Black</span>
-            <span id="black-elixir"
-                class="player-stats"></span>
+            <div class="player-top">
+              <span class="player-label">Black</span>
+              <span id="black-score"
+                  class="player-score"></span>
+            </div>
+
+            <div class="elixir-row">
+              <div id="black-elixir"
+                  class="elixir-bar"
+                  role="img">
+                <div id="black-elixir-fill"
+                    class="elixir-fill"></div>
+              </div>
+
+              <span id="black-elixir-value"
+                  class="elixir-value"></span>
+            </div>
           </div>
 
           <div id="black-clock"
@@ -591,6 +678,27 @@ const whiteElixirElement =
 const blackElixirElement =
   document.getElementById("black-elixir");
 
+const whiteElixirFillElement =
+  document.getElementById("white-elixir-fill");
+
+const blackElixirFillElement =
+  document.getElementById("black-elixir-fill");
+
+const whiteElixirValueElement =
+  document.getElementById("white-elixir-value");
+
+const blackElixirValueElement =
+  document.getElementById("black-elixir-value");
+
+const whiteScoreElement =
+  document.getElementById("white-score");
+
+const blackScoreElement =
+  document.getElementById("black-score");
+
+const ambientElement =
+  document.getElementById("ambient");
+
 const whiteClockElement =
   document.getElementById("white-clock");
 
@@ -709,6 +817,8 @@ setOnRerenderCallback(
 );
 
 initializeSound();
+
+buildAmbient();
 
 document
   .getElementById("play-online-button")
@@ -904,13 +1014,9 @@ moveHistoryElement.addEventListener(
   (event) => {
     const moveBtn = event.target.closest("[data-history-index]");
     if (moveBtn) {
-      const index = Number(moveBtn.dataset.historyIndex);
-      if (index === (appState.moveHistory?.length ?? 0) - 1) {
-        appState.selectedHistoryIndex = null;
-      } else {
-        appState.selectedHistoryIndex = index;
-      }
-      renderApp();
+      goToHistoryIndex(
+        Number(moveBtn.dataset.historyIndex)
+      );
     }
   }
 );
@@ -974,6 +1080,95 @@ window.setInterval(
 
 if (appState.roomId) {
   connectRoom();
+}
+
+function buildAmbient() {
+  if (!ambientElement) {
+    return;
+  }
+
+  const prefersReducedMotion =
+    window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+  if (prefersReducedMotion) {
+    return;
+  }
+
+  const random =
+    (min, max) => min + Math.random() * (max - min);
+
+  // A piece's column is fixed for the whole session -- it only drifts by a
+  // little over 100px horizontally -- so uniform random placement is not good
+  // enough. With this few pieces it reliably leaves whole columns of the
+  // screen permanently empty. Instead give each piece its own vertical band
+  // and jitter it inside that band: still irregular, but guaranteed to cover
+  // the full width. Bands are shuffled so column does not track glyph type.
+  const count =
+    Math.min(
+      AMBIENT_MAX_COUNT,
+      Math.max(
+        AMBIENT_MIN_COUNT,
+        Math.round(window.innerWidth / AMBIENT_SPACING)
+      )
+    );
+
+  const bands =
+    shuffle([...Array(count).keys()]);
+
+  const bandWidth =
+    AMBIENT_SPAN_WIDTH / count;
+
+  const fragment =
+    document.createDocumentFragment();
+
+  for (let index = 0; index < count; index++) {
+    const piece =
+      document.createElement("span");
+
+    piece.className = "ambient-piece";
+
+    piece.textContent =
+      AMBIENT_GLYPHS[index % AMBIENT_GLYPHS.length];
+
+    const left =
+      AMBIENT_SPAN_START +
+      bands[index] * bandWidth +
+      random(0, bandWidth);
+
+    const duration =
+      random(38, 74);
+
+    // Spread the starting heights the same way, so pieces trickle up the
+    // screen instead of arriving in clumps. Keyed on `index` while the column
+    // comes from the shuffled band, which keeps height and column independent.
+    const phase =
+      (index + random(0, 1)) / count;
+
+    piece.style.setProperty("--ambient-left", `${left}vw`);
+    piece.style.setProperty("--ambient-size", `${random(26, 92)}px`);
+    piece.style.setProperty("--ambient-duration", `${duration}s`);
+    piece.style.setProperty("--ambient-delay", `${-phase * duration}s`);
+    piece.style.setProperty("--ambient-drift", `${random(-110, 110)}px`);
+    piece.style.setProperty("--ambient-spin", `${random(-50, 50)}deg`);
+    piece.style.setProperty("--ambient-peak", `${random(0.05, 0.12)}`);
+
+    fragment.append(piece);
+  }
+
+  ambientElement.append(fragment);
+}
+
+function shuffle(items) {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j =
+      Math.floor(Math.random() * (i + 1));
+
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+
+  return items;
 }
 
 function goHome() {
@@ -1168,9 +1363,19 @@ function renderApp() {
     showingRules || showingChangelog || !hasRoom || gameReady
   );
 
+  const showingGame =
+    !(showingRules || showingChangelog || !hasRoom || !gameReady);
+
   gameView.classList.toggle(
     "hidden",
-    showingRules || showingChangelog || !hasRoom || !gameReady
+    !showingGame
+  );
+
+  // The board needs full attention, and drifting silhouettes behind it would
+  // compete with the real pieces.
+  ambientElement?.classList.toggle(
+    "hidden",
+    showingGame
   );
 
   if (showingRules || showingChangelog || !hasRoom) {
@@ -1268,11 +1473,21 @@ function renderGame() {
 }
 
 function renderElixir() {
-  whiteElixirElement.textContent =
-    `Elixir: ${appState.elixir?.w ?? 0} | Score: ${appState.score?.w ?? 0}`;
+  renderElixirSide(
+    "w",
+    whiteElixirElement,
+    whiteElixirFillElement,
+    whiteElixirValueElement,
+    whiteScoreElement
+  );
 
-  blackElixirElement.textContent =
-    `Elixir: ${appState.elixir?.b ?? 0} | Score: ${appState.score?.b ?? 0}`;
+  renderElixirSide(
+    "b",
+    blackElixirElement,
+    blackElixirFillElement,
+    blackElixirValueElement,
+    blackScoreElement
+  );
 
   whitePlayerHudElement.classList.toggle(
     "mine",
@@ -1282,6 +1497,69 @@ function renderElixir() {
   blackPlayerHudElement.classList.toggle(
     "mine",
     appState.playerColor === "b"
+  );
+}
+
+function renderElixirSide(
+  role,
+  barElement,
+  fillElement,
+  valueElement,
+  scoreElement
+) {
+  const elixir =
+    appState.elixir?.[role] ?? 0;
+
+  const score =
+    appState.score?.[role] ?? 0;
+
+  const filled =
+    Math.min(elixir, ELIXIR_BAR_MAX);
+
+  fillElement.style.width =
+    `${(filled / ELIXIR_BAR_MAX) * 100}%`;
+
+  valueElement.textContent =
+    String(elixir);
+
+  scoreElement.textContent =
+    score > 0
+      ? `+${score}`
+      : "";
+
+  barElement.setAttribute(
+    "aria-label",
+    `${role === "w" ? "White" : "Black"} Elixir ${elixir}`
+  );
+
+  barElement.classList.toggle(
+    "surplus",
+    elixir > ELIXIR_BAR_MAX
+  );
+
+  // Flash only on a gain, so the bar reacts to earning Elixir rather than to
+  // every unrelated rerender.
+  const previous =
+    lastElixir[role];
+
+  if (previous !== null && elixir > previous) {
+    pulseElixir(barElement);
+  }
+
+  lastElixir[role] = elixir;
+}
+
+function pulseElixir(barElement) {
+  barElement.classList.remove("gained");
+
+  // Force a reflow so the animation restarts on consecutive gains.
+  void barElement.offsetWidth;
+
+  barElement.classList.add("gained");
+
+  window.setTimeout(
+    () => barElement.classList.remove("gained"),
+    600
   );
 }
 
@@ -1554,13 +1832,29 @@ function goToHistoryIndex(index) {
     return;
   }
 
+  const previousIndex = resolveHistoryIndex();
+
   if (index === null || index >= moves.length - 1) {
     appState.selectedHistoryIndex = null;
   } else {
     appState.selectedHistoryIndex = Math.max(-1, index);
   }
 
+  // Stepping one ply animates. Jumping further would slide every piece at
+  // once, so snap instead.
+  if (Math.abs(resolveHistoryIndex() - previousIndex) > 1) {
+    requestSnap();
+  }
+
   renderApp();
+}
+
+function resolveHistoryIndex() {
+  const moves = appState.moveHistory || [];
+
+  return appState.selectedHistoryIndex === null
+    ? moves.length - 1
+    : appState.selectedHistoryIndex;
 }
 
 function renderGameOver() {

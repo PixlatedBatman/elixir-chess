@@ -1,12 +1,33 @@
+html {
+  height: 100%;
+  height: 100dvh;
+}
+
 body {
   margin: 0;
+  padding: 0;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: #1e1e1e;
   color: white;
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+#app {
+  width: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 .page {
+  width: 100%;
+  min-height: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   box-sizing: border-box;
   padding: 40px 12px 24px;
 
@@ -146,12 +167,17 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 48px);
+
+  /* Fill whatever `.page` has left rather than doing viewport maths here.
+     Hardcoding `100vh - <padding>` has to be kept in sync with `.page`'s
+     padding, which differs between desktop and the mobile breakpoint, so any
+     single value is wrong on one of them and the page overflows. */
+  flex-grow: 1;
+
   width: 100%;
   position: relative;
   box-sizing: border-box;
   padding: 0 0 68px;
-  margin: auto 0;
 }
 
 .home-screen-footer {
@@ -438,8 +464,9 @@ button:disabled {
 .player-details {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
   min-width: 0;
+  flex: 1;
 }
 
 .player-label {
@@ -448,10 +475,199 @@ button:disabled {
   color: #f0d9b5;
 }
 
-.player-stats {
-  font-size: 13px;
-  color: #d5d5d5;
+.player-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+}
+
+.player-score {
+  color: #9fd6a3;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* ---------------- ELIXIR BAR ---------------- */
+
+.elixir-row {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+}
+
+.elixir-bar {
+  position: relative;
+
+  flex: 1;
+  min-width: 0;
+  height: 16px;
+
+  background: #141414;
+  border: 1px solid #3d3550;
+  border-radius: 999px;
+
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.elixir-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+
+  width: 0;
+
+  background: linear-gradient(90deg, #7b3fbf 0%, #b44ce0 55%, #e070f0 100%);
+  border-radius: 999px;
+
+  transition: width 320ms cubic-bezier(0.22, 0.68, 0.34, 1);
+}
+
+/* Segment dividers, so a glance reads as a count rather than a length. */
+.elixir-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(10% - 1px),
+    rgba(10, 10, 10, 0.55) calc(10% - 1px),
+    rgba(10, 10, 10, 0.55) 10%
+  );
+
+  pointer-events: none;
+}
+
+/* Outside the track, not overlaid on it: at mid values a centred label sits
+   exactly on the fill edge and becomes hard to read. */
+.elixir-value {
+  min-width: 15px;
+
+  color: #dcaef0;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+
+  flex-shrink: 0;
+}
+
+/* Past 10 Elixir nothing new becomes affordable, so the bar stops growing
+   and shifts to a brighter fill instead. */
+.elixir-bar.surplus {
+  border-color: #8a6fb0;
+}
+
+.elixir-bar.surplus + .elixir-value {
+  color: #ffd9ff;
+}
+
+.elixir-bar.surplus .elixir-fill {
+  background: linear-gradient(90deg, #b44ce0 0%, #e070f0 50%, #ffd9ff 100%);
+}
+
+.elixir-bar.gained .elixir-fill {
+  animation: elixir-gain 600ms ease-out;
+}
+
+@keyframes elixir-gain {
+  0% {
+    filter: brightness(1);
+    box-shadow: none;
+  }
+
+  35% {
+    filter: brightness(1.55);
+    box-shadow: 0 0 12px 2px rgba(224, 112, 240, 0.75);
+  }
+
+  100% {
+    filter: brightness(1);
+    box-shadow: none;
+  }
+}
+
+/* ---------------- AMBIENT BACKGROUND ---------------- */
+
+.ambient-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ambient-piece {
+  position: absolute;
+  bottom: -14vh;
+  left: var(--ambient-left);
+
+  color: #f0d9b5;
+  font-size: var(--ambient-size);
+  line-height: 1;
+
+  opacity: 0;
+  filter: blur(1px);
+
+  will-change: transform, opacity;
+  animation:
+    ambient-rise
+    var(--ambient-duration)
+    linear
+    var(--ambient-delay)
+    infinite;
+}
+
+@keyframes ambient-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  14% {
+    opacity: var(--ambient-peak);
+  }
+
+  86% {
+    opacity: var(--ambient-peak);
+  }
+
+  100% {
+    opacity: 0;
+    transform:
+      translate3d(var(--ambient-drift), -128vh, 0)
+      rotate(var(--ambient-spin));
+  }
+}
+
+/* Keep every screen above the drifting layer. */
+.home-wrapper,
+.screen-panel,
+.game-view {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-layer {
+    display: none;
+  }
+
+  .elixir-fill {
+    transition: none;
+  }
+
+  .elixir-bar.gained .elixir-fill {
+    animation: none;
+  }
 }
 
 .board-wrap {
@@ -1025,12 +1241,39 @@ button:disabled {
     align-items: stretch;
     flex-direction: column;
   }
+
+  /* `.home-actions button` sets `flex: 1 1 150px` as a minimum *width* for the
+     wrapped row layout. Once the container flips to a column that basis
+     becomes a minimum *height*, turning each button into a 150px slab and
+     pushing the page past the viewport. */
+  .home-actions button {
+    flex: 0 0 auto;
+  }
 }
 
 @media (max-width: 600px) {
   .page {
     padding: 6px 8px;
     gap: 8px;
+    min-height: 100%;
+    min-height: 100dvh;
+  }
+
+  .home-wrapper {
+    padding: 0 0 50px;
+  }
+
+  .home-screen-footer {
+    bottom: 12px;
+  }
+
+  .screen-panel.home-panel {
+    padding: 22px 18px;
+    gap: 14px;
+  }
+
+  .home-panel h1 {
+    font-size: 28px;
   }
 
   .game-view {
@@ -1065,8 +1308,16 @@ button:disabled {
     font-size: 13px;
   }
 
-  .player-stats {
+  .player-score {
     font-size: 11px;
+  }
+
+  .elixir-bar {
+    height: 14px;
+  }
+
+  .elixir-value {
+    font-size: 10px;
   }
 
   .clock {

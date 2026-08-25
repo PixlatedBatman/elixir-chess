@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Piece Layer Prototype — Elixir Chess</title>
+</head>
+
+<body>
+  <div class="lab">
+
+    <header class="lab-header">
+      <h1>Piece Layer Prototype</h1>
+      <p>Persistent absolute-positioned pieces on a static square grid. Drag, click, scrub, summon.</p>
+    </header>
+
+    <div class="lab-body">
+
+      <div class="board-column">
+        <div id="board-shell"></div>
+
+        <div id="reserve-tray" class="reserve-tray"></div>
+
+        <div id="message"></div>
+
+        <p class="hint">
+          Drag or click pieces to move. Pick a reserve piece then click a square to summon it.
+          Arrow keys scrub history (&larr;/&rarr; animate, Home/End snap).
+        </p>
+      </div>
+
+      <aside class="side-column">
+
+        <section class="panel">
+          <h2>Scenario</h2>
+          <select id="scenario-select"></select>
+        </section>
+
+        <section class="panel">
+          <h2>Playback</h2>
+
+          <div class="control-grid">
+            <button id="btn-play" type="button">Auto-play</button>
+            <button id="btn-stop" type="button">Stop</button>
+            <button id="btn-back" type="button">&larr; Back</button>
+            <button id="btn-step" type="button">Step &rarr;</button>
+            <button id="btn-start" type="button">Start</button>
+            <button id="btn-end" type="button">Latest</button>
+            <button id="btn-random" type="button">Random</button>
+            <button id="btn-flip" type="button">Flip</button>
+            <button id="btn-rapid" type="button" class="wide">Rapid fire &times;4</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>State</h2>
+
+          <dl class="status-grid">
+            <dt>Turn</dt>
+            <dd id="status-turn">&mdash;</dd>
+
+            <dt>Ply</dt>
+            <dd id="status-ply">&mdash;</dd>
+
+            <dt>Elixir</dt>
+            <dd id="status-elixir">&mdash;</dd>
+
+            <dt>King</dt>
+            <dd id="status-check">&mdash;</dd>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <h2>Motion</h2>
+
+          <div class="slider-row">
+            <label for="speed-range">
+              Duration <span id="speed-value">300ms</span>
+            </label>
+
+            <input id="speed-range"
+                type="range"
+                min="0"
+                max="600"
+                step="10"
+                value="300" />
+          </div>
+
+          <div class="check-row">
+            <input id="reduced-motion" type="checkbox" />
+            <label for="reduced-motion">Force reduced motion</label>
+          </div>
+        </section>
+
+      </aside>
+    </div>
+  </div>
+
+  <script type="module" src="/src/prototype.js"></script>
+</body>
+</html>

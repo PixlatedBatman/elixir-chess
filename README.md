@@ -19,6 +19,8 @@ On your turn, choose one action:
 - Reserve placements do not give +1 Elixir.
 - Both players can see both Elixir balances.
 - The backend owns Elixir balances and validates reserve purchases.
+- Each player's balance is shown as a segmented bar in their HUD, which fills as Elixir is earned and drains when a reserve piece is bought.
+- Elixir is not capped. The bar is scaled to 10, one past the most expensive purchase, and anything beyond that fills the bar completely and switches to a brighter "surplus" style while the number keeps counting.
 
 Reserve costs:
 
@@ -91,6 +93,73 @@ Room behavior:
 - Legal moves, captures, selected squares, the last move, and check are highlighted.
 - Piece images disable browser-native drag behavior to avoid mobile image popups where possible.
 
+## Board Animation
+
+Pieces slide between squares instead of being redrawn in place. The board is two stacked layers: a static 64-square grid that is built once, and a piece layer where every piece is an absolutely positioned element moved with a CSS `transform`. Because the piece elements are never destroyed, a move is just a change of transform, which the browser animates.
+
+Positions use percentage translates that resolve against the piece's own box, so one square is `100%`. The board needs no pixel maths and survives resizing without recalculation.
+
+### Feature flag
+
+Animation is on by default. Add `?noanim` to the URL to fall back to the original board, which rebuilt all 64 squares and every piece on each render:
+
+```
+http://localhost:5173/?room=1234&noanim
+```
+
+Both boards emit the same CSS class names, so they look identical and can be compared side by side.
+
+The flag lives in `frontend/src/render.js`:
+
+```js
+const ANIMATION_ENABLED =
+  !new URLSearchParams(
+    window.location.search
+  ).has("noanim");
+```
+
+It is read once when the module loads, so changing the URL requires a page reload.
+
+To change it:
+
+- **Make animation opt-in instead of opt-out:** drop the `!` and use a positive parameter name, e.g. `.has("anim")`.
+- **Force one path always:** replace the expression with `true` or `false`.
+- **Remove the flag entirely:** set it to `true`, then delete `createBoardLegacy` from `render.js` and the `elementFromPoint` fallback in `resolveDropSquare` in `frontend/src/interaction.js`. Nothing else depends on it.
+
+### Motion settings
+
+- **Duration** defaults to 300ms, set by `--pl-duration` on the board element. Override it in CSS, pass `animationMs` when constructing the layer, or call `setAnimationDuration()` at runtime.
+- **Piece size** is `--pl-piece-size` (80% in game, matching the original piece sizing).
+- **Reduced motion** is respected automatically via `prefers-reduced-motion`. Adding the `pl-reduced-motion` class to the board forces it on. Moves still apply instantly; only the animation is skipped.
+
+Reserve placements play a summon animation rather than a slide, for both the placing player and the opponent. Captures fade out, promotions swap the sprite on arrival, and castling slides the king and rook together.
+
+Stepping one move through the history animates. Larger jumps (`Home`, `End`, clicking a distant move) snap instead, since sliding every piece at once is unreadable.
+
+### Elixir bar
+
+The HUD Elixir bar animates its width when a balance changes, and flashes only when Elixir is *gained*, so it reacts to earning rather than to unrelated rerenders. Segment dividers make it countable at a glance, and the numeric value sits outside the track so it stays readable whatever the fill level.
+
+The display ceiling is `ELIXIR_BAR_MAX` in `frontend/src/main.js`. Change it if reserve costs change.
+
+### Ambient background
+
+The menu screens have a layer of slowly drifting piece silhouettes behind them. They are font glyphs rather than images, so nothing is downloaded and they scale cleanly at any size. Each one gets a randomised size, speed, drift and a negative animation delay, so the field is already in motion on the first frame instead of starting empty.
+
+A piece keeps its column for the whole session, drifting only about 100px sideways, so placement is **stratified rather than uniformly random**: the width is split into one band per piece and each piece is jittered inside its own band. Purely random placement reliably leaves whole columns of the screen permanently empty. Bands are shuffled so a piece's column does not track its glyph type, and starting heights are spread the same way so pieces trickle upward instead of arriving in clumps.
+
+The number of pieces scales with viewport width (`AMBIENT_SPACING`, clamped between `AMBIENT_MIN_COUNT` and `AMBIENT_MAX_COUNT`), because the bands stretch with the viewport and a fixed count leaves wide screens sparse. The count is decided at load; bands are in `vw`, so coverage stays even if the window is later resized.
+
+The layer is `pointer-events: none` and never intercepts input. It is hidden entirely while a game is in progress, so it cannot compete with the real pieces on the board.
+
+Tune the field with `AMBIENT_GLYPHS` and the spacing constants in `frontend/src/main.js`, and the motion itself with the `ambient-rise` keyframes in `frontend/src/style.css`.
+
+Under `prefers-reduced-motion` the glyphs are not created at all, and the layer is also hidden in CSS as a fallback.
+
+### Prototype page
+
+`frontend/prototype.html` is a development-only lab for the piece layer, with scenario playback, a duration slider, a reduced-motion toggle, and castling, en passant, promotion and summon cases. Run `npm run dev` and open `/prototype.html`. Vite only bundles `index.html`, so this page is never included in a production build. Its own styling is scaffolding and is not the game's UI.
+
 ## Sounds
 
 Sound files live in `frontend/public/sounds/`.
@@ -129,7 +198,10 @@ Important files:
 
 - `frontend/src/main.js`: UI layout and view routing
 - `frontend/src/interaction.js`: board and reserve interactions
-- `frontend/src/render.js`: board and reserve rendering
+- `frontend/src/render.js`: board and reserve rendering, animation feature flag
+- `frontend/src/board/pieceLayer.js`: animated piece layer, square grid, hit testing
+- `frontend/src/board/pieceLayer.css`: piece layer and animation styles
+- `frontend/src/board/boardTheme.css`: adapts the piece layer to the game's board
 - `frontend/src/api.js`: room API, WebSocket updates, server-state application
 - `frontend/src/sound.js`: sound loading and playback
 - `frontend/src/state.js`: client state

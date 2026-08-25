@@ -17,6 +17,8 @@ import {
 import {
   createBoard,
   renderReserve,
+  getBoardLayer,
+  setPendingMove,
 } from "./render";
 
 import {
@@ -61,12 +63,18 @@ export function setOnRerenderCallback(
 
 // ---------------- DRAG STATE ----------------
 
-// let draggedPiece = null;
-// let draggedFrom = null;
-
-// let floatingPiece = null;
-
 let activePointerId = null;
+
+// Set while a board piece is being dragged directly (animated board). Reserve
+// tray drags still use the floating clone, so this stays null for those.
+let dragEntry = null;
+
+// A drag that ends on a different square still produces a trailing `click`,
+// whose target is the common ancestor of the press and release. The old board
+// never saw it because re-rendering mid-drag detached the pressed element and
+// the browser dropped the click; pieces now persist, so it has to be swallowed
+// explicitly or it lands in handleBoardClick and undoes the drop.
+let suppressNextClick = false;
 
 // ---------------- INIT ----------------
 
@@ -141,14 +149,33 @@ function startDragging(event) {
     return;
   }
 
-  const piece =
-    event.target.closest(".piece");
-
-  if (!piece) return;
+  // Clearing here (rather than after consuming it) guarantees a flag left
+  // over from a gesture that never produced a click cannot eat a later one.
+  suppressNextClick = false;
 
   if (appState.gameOver) {
     return;
   }
+
+  const layer =
+    getBoardLayer();
+
+  const piece =
+    event.target.closest(".piece");
+
+  // Board pieces live in the inert piece layer, so they are resolved from
+  // board geometry instead of by hit-testing a DOM node.
+  const boardEntry =
+    !piece && layer && event.target.closest(".square")
+      ? layer.getPiece(
+          layer.squareFromPoint(
+            event.clientX,
+            event.clientY
+          )
+        )
+      : null;
+
+  if (!piece && !boardEntry) return;
 
   if (appState.selectedHistoryIndex !== null) {
     appState.selectedHistoryIndex = null;
@@ -159,7 +186,7 @@ function startDragging(event) {
   event.preventDefault();
 
   const reservePieceCode =
-    piece.dataset.reserve;
+    piece?.dataset.reserve;
 
   if (reservePieceCode) {
     startReserveDragging(
@@ -172,10 +199,14 @@ function startDragging(event) {
   }
 
   const pieceCode =
-    piece.dataset.piece;
+    boardEntry
+      ? boardEntry.code
+      : piece.dataset.piece;
 
   const from =
-    piece.dataset.from;
+    boardEntry
+      ? boardEntry.square
+      : piece.dataset.from;
 
   const pieceColor =
     pieceCode[0];
@@ -206,24 +237,37 @@ function startDragging(event) {
   appState.draggedFrom = from;
   appState.selectedSource = from;
 
-  // floating piece
-  appState.floatingPiece =
-    document.createElement("img");
+  if (boardEntry) {
+    // Drag the actual piece. No clone, and nothing to hide underneath.
+    dragEntry = boardEntry;
 
-  appState.floatingPiece.src = piece.src;
+    layer.beginDrag(boardEntry);
 
-  appState.floatingPiece.classList.add(
-    "floating-piece"
-  );
+    layer.dragTo(
+      boardEntry,
+      event.clientX,
+      event.clientY
+    );
+  } else {
+    // floating piece
+    appState.floatingPiece =
+      document.createElement("img");
 
-  document.body.appendChild(
-    appState.floatingPiece
-  );
+    appState.floatingPiece.src = piece.src;
 
-  moveFloatingPiece(
-    event.clientX,
-    event.clientY
-  );
+    appState.floatingPiece.classList.add(
+      "floating-piece"
+    );
+
+    document.body.appendChild(
+      appState.floatingPiece
+    );
+
+    moveFloatingPiece(
+      event.clientX,
+      event.clientY
+    );
+  }
 
   rerender();
 }
@@ -302,6 +346,18 @@ function moveDraggingPiece(event) {
     return;
   }
 
+  if (dragEntry) {
+    event.preventDefault();
+
+    getBoardLayer()?.dragTo(
+      dragEntry,
+      event.clientX,
+      event.clientY
+    );
+
+    return;
+  }
+
   if (!appState.floatingPiece) return;
 
   event.preventDefault();
@@ -339,17 +395,16 @@ async function stopDragging(event) {
 
   event.preventDefault();
 
-  const element =
-    document.elementFromPoint(
-      event.clientX,
-      event.clientY
-    );
+  const target =
+    resolveDropSquare(event);
 
-  const square =
-    element?.closest(".square");
+  // Anything but a tap in place is a drag, and its trailing click is spurious.
+  if (target !== appState.draggedFrom) {
+    suppressNextClick = true;
+  }
 
   // dropped nowhere
-  if (!square) {
+  if (!target) {
     if (
       appState.draggedFrom?.startsWith(
         "reserve:"
@@ -363,9 +418,6 @@ async function stopDragging(event) {
     rerender();
     return;
   }
-
-  const target =
-    square.dataset.square;
 
   if (
     appState.draggedFrom?.startsWith(
@@ -424,7 +476,12 @@ async function stopDragging(event) {
   const isTargetAllowed =
     appState.legalMoves.includes(target);
 
-  cleanupDrag();
+  // An accepted drop lets the new position repaint from wherever the piece
+  // was let go. Anything else glides it back to its own square -- including
+  // a queued premove, which highlights but does not move the piece.
+  cleanupDrag({
+    returnHome: !(isTargetAllowed && isMyTurn()),
+  });
 
   if (isMyTurn()) {
     if (isTargetAllowed) {
@@ -463,7 +520,44 @@ function cancelDragging(event) {
   rerender();
 }
 
-function finishTapSelection() {
+function resolveDropSquare(event) {
+  const layer =
+    getBoardLayer();
+
+  if (layer) {
+    return layer.squareFromPoint(
+      event.clientX,
+      event.clientY
+    );
+  }
+
+  const element =
+    document.elementFromPoint(
+      event.clientX,
+      event.clientY
+    );
+
+  return element
+    ?.closest(".square")
+    ?.dataset.square ?? null;
+}
+
+function releaseLayerDrag({ returnHome }) {
+  if (!dragEntry) {
+    return;
+  }
+
+  getBoardLayer()?.endDrag(
+    dragEntry,
+    { returnHome }
+  );
+
+  dragEntry = null;
+}
+
+function finishTapSelection({ returnHome = true } = {}) {
+  releaseLayerDrag({ returnHome });
+
   if (appState.floatingPiece) {
     appState.floatingPiece.remove();
   }
@@ -474,7 +568,9 @@ function finishTapSelection() {
   activePointerId = null;
 }
 
-function cleanupDrag() {
+function cleanupDrag({ returnHome = true } = {}) {
+
+  releaseLayerDrag({ returnHome });
 
   if (appState.floatingPiece) {
     appState.floatingPiece.remove();
@@ -573,6 +669,10 @@ async function commitMove(from, to) {
       to,
     ],
   };
+
+  setPendingMove(
+    describeMoveForLayer(move)
+  );
 
   appState.moveHistory = [
     ...(appState.moveHistory || []),
@@ -726,6 +826,12 @@ async function commitReserve(
     ],
   };
 
+  setPendingMove({
+    type: "reserve",
+    code: pieceCode,
+    to: target,
+  });
+
   appState.moveHistory = [
     ...(appState.moveHistory || []),
     {
@@ -789,6 +895,43 @@ async function commitReserve(
     playIllegalSound();
     return false;
   }
+}
+
+// chess.js already knows exactly what happened, so hand the layer the parts
+// it cannot infer from the FEN alone: the extra rook leg for castling, the
+// off-target capture square for en passant, and the promotion piece.
+function describeMoveForLayer(move) {
+  const described = {
+    type: "move",
+    from: move.from,
+    to: move.to,
+  };
+
+  const flags =
+    move.flags || "";
+
+  if (flags.includes("e")) {
+    described.captureSquare =
+      `${move.to[0]}${move.from[1]}`;
+  }
+
+  if (flags.includes("k") || flags.includes("q")) {
+    const rank =
+      move.color === "w"
+        ? "1"
+        : "8";
+
+    described.rook =
+      flags.includes("k")
+        ? { from: `h${rank}`, to: `f${rank}` }
+        : { from: `a${rank}`, to: `d${rank}` };
+  }
+
+  if (move.promotion) {
+    described.promotion = move.promotion;
+  }
+
+  return described;
 }
 
 function rollbackState(snapshot) {
@@ -901,6 +1044,11 @@ export async function executePremove() {
 }
 
 async function handleBoardClick(event) {
+  if (suppressNextClick) {
+    suppressNextClick = false;
+    return;
+  }
+
   if (appState.gameOver) {
     return;
   }

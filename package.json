@@ -16,8 +16,6 @@
     "worker:deploy": "npm run deploy --workspace worker"
   },
   "dependencies": {
-    "@chrisoakman/chessboardjs": "^1.0.0",
-    "chess.js": "^1.4.0",
-    "jquery": "^4.0.0"
+    "chess.js": "^1.4.0"
   }
 }

@@ -16,6 +16,10 @@ import {
   executePremove,
 } from "./interaction";
 
+import {
+  setPendingMove,
+} from "./render";
+
 const DEFAULT_API_BASE_URL =
   "https://api.elixirchess.karthikkashyap.com";
 
@@ -343,6 +347,24 @@ function applyServerState(payload) {
     );
 
   setFen(payload.fen);
+
+  // Reserve drops read as a summon rather than a slide, and the FEN alone
+  // cannot say which of the two a new piece was. Plain moves, castling and
+  // en passant are all inferred correctly without this hint.
+  const lastHistoryMove =
+    payload.moveHistory?.[payload.moveHistory.length - 1];
+
+  if (
+    payload.lastMove?.type === "reserve" &&
+    lastHistoryMove?.type === "reserve" &&
+    lastHistoryMove.to
+  ) {
+    setPendingMove({
+      type: "reserve",
+      code: `${lastHistoryMove.color}${(lastHistoryMove.notation || "P")[0]}`,
+      to: lastHistoryMove.to,
+    });
+  }
 
   appState.statusMessage =
     getStatusMessage(payload);
